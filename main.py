@@ -191,7 +191,7 @@ msg = bot.reply_to(message, "🏦 Informe o nome do banco para todos os cartões
 bot.register_next_step_handler(msg, add_gg_massa_dados)
 
 def add_gg_massa_dados(message: Any) -> None:
-    if not is_admin(message): 
+    if not is_admin(message):
         return
     banco = message.text.strip()
     msg = bot.reply_to(message, f"✅ Banco '{banco}' definido.\nAgora envie a lista (um por linha):\nFormato: NÚMERO|VALIDADE|CVV")
