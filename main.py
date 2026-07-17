@@ -232,7 +232,7 @@ def add_dados_massa(message: Any) -> None:
     bot.reply_to(message, f"✅ {sucesso} registros de Dados adicionados com sucesso!")
 
                 protect()
-            except (RuntimeError, CPFError) as exc:
+    except (RuntimeError, CPFError) as exc:
                 bot.reply_to(message, f"❌ {exc}")
                 return
             state[message.from_user.id] = {"flow": "dados"}
