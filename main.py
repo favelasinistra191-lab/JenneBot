@@ -185,6 +185,52 @@ if bot:
             bot.register_next_step_handler(msg, gg_bin)
         elif option == "dados":
             try:
+
+    @bot.message_handler(commands=["add_gg_massa"])
+def add_gg_massa_inicio(message: Any) -> None:
+    if not is_admin(message): return
+    msg = bot.reply_to(message, "🏦 Informe o nome do banco para todos os cartões desta lista:")
+    bot.register_next_step_handler(msg, add_gg_massa_dados)
+
+def add_gg_massa_dados(message: Any) -> None:
+    if not is_admin(message): return
+    banco = message.text.strip()
+    msg = bot.reply_to(message, f"✅ Banco '{banco}' definido.\nAgora envie a lista (um por linha):\nFormato: NÚMERO|VALIDADE|CVV")
+    state[message.from_user.id] = {"banco": banco}
+    bot.register_next_step_handler(msg, processar_gg_massa)
+
+def processar_gg_massa(message: Any) -> None:
+    current = state.pop(message.from_user.id, None)
+    if not is_admin(message) or not current: return
+    linhas = message.text.split('\n')
+    sucesso = 0
+    for linha in linhas:
+        if '|' not in linha: continue
+        try:
+            dados = linha.strip()
+            bin_v = dados.split('|')[0][:6]
+            db.adicionar_gg_pendente(bin_v, current["banco"], dados, message.from_user.id)
+            sucesso += 1
+        except: continue
+    bot.reply_to(message, f"✅ {sucesso} GGs do banco {current['banco']} adicionadas!")
+
+@bot.message_handler(commands=["add_dados_massa"])
+def add_dados_massa(message: Any) -> None:
+    if not is_admin(message): return
+    texto = message.text.replace("/add_dados_massa", "").strip()
+    linhas = texto.split('\n')
+    sucesso = 0
+    for linha in linhas:
+        if '|' not in linha: continue
+        try:
+            nome, cpf = linha.split('|', 1)
+            p = protect()
+            cipher = p.encrypt(cpf.strip())
+            db.adicionar_dados_pendentes(nome.strip(), cipher, p.fingerprint(cpf.strip()), message.from_user.id)
+            sucesso += 1
+        except: continue
+    bot.reply_to(message, f"✅ {sucesso} registros de Dados adicionados com sucesso!")
+
                 protect()
             except (RuntimeError, CPFError) as exc:
                 bot.reply_to(message, f"❌ {exc}")
