@@ -3,7 +3,6 @@ from keep_alive import keep_alive
 
 keep_alive()
 
-
 import logging
 import os
 import time
@@ -38,12 +37,10 @@ bot = telebot.TeleBot(TOKEN) if TOKEN else None
 HEADERS = {"Crypto-Pay-API-Token": CRYPTO_TOKEN}
 state: dict[int, dict[str, str]] = {}
 
-
 @dataclass(frozen=True)
 class Invoice:
     invoice_id: str
     url: str
-
 
 def protect() -> CPFProtector:
     key = os.getenv("CPF_ENCRYPTION_KEY", "").strip()
@@ -51,16 +48,13 @@ def protect() -> CPFProtector:
         raise RuntimeError("Configure CPF_ENCRYPTION_KEY no .env.")
     return CPFProtector.from_string(key)
 
-
 def require_bot() -> telebot.TeleBot:
     if bot is None:
         raise RuntimeError("Configure TELEGRAM_BOT_TOKEN no .env.")
     return bot
 
-
 def is_admin(message: Any) -> bool:
     return bool(ADMIN_ID and message.from_user.id == ADMIN_ID)
-
 
 def register(obj: Any) -> None:
     user = obj.from_user
@@ -77,9 +71,7 @@ def register(obj: Any) -> None:
     )
     db.garantir_usuario(user.id, name, getattr(user, "username", None))
 
-
 def invoice(description: str, value: Decimal) -> Invoice | None:
-    """Cria fatura fiduciária denominada em BRL; o pagador escolhe o criptoativo."""
     if not CRYPTO_TOKEN:
         return None
     payload = {
@@ -106,7 +98,6 @@ def invoice(description: str, value: Decimal) -> Invoice | None:
         LOG.warning("Erro ao criar fatura: %s", exc)
     return None
 
-
 def paid(invoice_id: str) -> bool:
     try:
         response = requests.get(
@@ -129,12 +120,10 @@ def paid(invoice_id: str) -> bool:
         LOG.warning("Erro ao consultar fatura: %s", exc)
         return False
 
-
 def back() -> types.InlineKeyboardMarkup:
     markup = types.InlineKeyboardMarkup()
     markup.add(types.InlineKeyboardButton("⬅️ Início", callback_data="inicio"))
     return markup
-
 
 def home(chat: int, uid: int) -> None:
     saldo = db.obter_saldo(uid)
@@ -143,16 +132,9 @@ def home(chat: int, uid: int) -> None:
     esim = db.contar_estoque_categoria("esim")
     markup = types.InlineKeyboardMarkup(row_width=1)
     markup.add(
-        types.InlineKeyboardButton(
-            f"💳 GG • R$ 4,00 • {gg} disponíveis", callback_data="menu_gg"
-        ),
-        types.InlineKeyboardButton(
-            f"📺 Streaming • R$ 12,00 • {stream} disponíveis",
-            callback_data="buy_streaming",
-        ),
-        types.InlineKeyboardButton(
-            f"📶 eSIM • R$ 20,00 • {esim} disponíveis", callback_data="buy_esim"
-        ),
+        types.InlineKeyboardButton(f"💳 GG • R$ 4,00 • {gg} disponíveis", callback_data="menu_gg"),
+        types.InlineKeyboardButton(f"📺 Streaming • R$ 12,00 • {stream} disponíveis", callback_data="buy_streaming"),
+        types.InlineKeyboardButton(f"📶 eSIM • R$ 20,00 • {esim} disponíveis", callback_data="buy_esim"),
         types.InlineKeyboardButton("👤 Minha Conta", callback_data="conta"),
         types.InlineKeyboardButton("➕ Adicionar saldo", callback_data="saldo"),
     )
@@ -163,9 +145,7 @@ def home(chat: int, uid: int) -> None:
         parse_mode="Markdown",
     )
 
-
 if bot:
-
     @bot.message_handler(commands=["start"])
     def start(message: Any) -> None:
         register(message)
@@ -177,61 +157,8 @@ if bot:
             return
         parts = (message.text or "").split(maxsplit=2)
         option = parts[1].lower() if len(parts) > 1 else ""
-        if option == "gg":
-            state[message.from_user.id] = {"flow": "gg"}
-            msg = bot.reply_to(
-                message, "💳 /add gg — passo 1/3: informe a BIN (6 a 8 dígitos):"
-            )
-            bot.register_next_step_handler(msg, gg_bin)
-@bot.message_handler(commands=["add_gg_massa"])
-def add_gg_massa_inicio(message):
-    if not is_admin(message):
-        return
-    msg = bot.reply_to(message, "Informe o nome")
-    bot.register_next_step_handler(msg, add_gg_massa_dados)
-def add_gg_massa_dados(message: Any) -> None:
-    if not is_admin(message):
-        return
-    banco = message.text.strip()
-    msg = bot.reply_to(message, f"✅ Banco '{banco}' definido.\nAgora envie a lista (um por linha):\nFormato: NÚMERO|VALIDADE|CVV")
-    state[message.from_user.id] = {"banco": banco}
-    bot.register_next_step_handler(msg, processar_gg_massa)
-
-def processar_gg_massa(message: Any) -> None:
-    current = state.pop(message.from_user.id, None)
-    if not is_admin(message) or not current: 
-        return
-    linhas = message.text.split('\n')
-    sucesso = 0
-    for linha in linhas:
-        if '|' not in linha: continue
-        try:
-            dados = linha.strip()
-            bin_v = dados.split('|')[0][:6]
-            db.adicionar_gg_pendente(bin_v, current["banco"], dados, message.from_user.id)
-            sucesso += 1
-        except: continue
-    bot.reply_to(message, f"✅ {sucesso} GGs do banco {current['banco']} adicionadas!")
-
-@bot.message_handler(commands=["add_dados_massa"])
-def add_dados_massa(message: Any) -> None:
-    if not is_admin(message): 
-        return
-    texto = message.text.replace("/add_dados_massa", "").strip()
-    linhas = texto.split('\n')
-    sucesso = 0
-    for linha in linhas:
-        if '|' not in linha: continue
-        try:
-            nome, cpf = linha.split('|', 1)
-            p = protect()
-            cipher = p.encrypt(cpf.strip())
-            db.adicionar_dados_pendentes(nome.strip(), cipher, p.fingerprint(cpf.strip()), message.from_user.id)
-            sucesso += 1
-        except: continue
-    bot.reply_to(message, f"✅ {sucesso} registros de Dados adicionados com sucesso! "
-                message, "👤 /add dados — passo 1/2: informe o nome completo:"
-            )
+        if option == "dados":
+            msg = bot.reply_to(message, "👤 /add dados — passo 1/2: informe o nome completo:")
             bot.register_next_step_handler(msg, data_name)
         elif option == "streaming" and len(parts) == 3:
             db.adicionar_estoque("streaming", parts[2])
@@ -239,80 +166,80 @@ def add_dados_massa(message: Any) -> None:
         else:
             bot.reply_to(
                 message,
-                "Uso:\n`/add gg`\n`/add dados`\n`/add streaming LOGIN|SENHA|OBS`",
+                "Uso:\n`/add dados`\n`/add streaming LOGIN|SENHA|OBS`",
                 parse_mode="Markdown",
             )
 
-    def gg_bin(message: Any) -> None:
-        value = (message.text or "").strip()
-        if not is_admin(message) or not value.isdigit() or not 6 <= len(value) <= 8:
-            bot.reply_to(message, "❌ BIN inválida. Recomece com /add gg.")
-            return
-        state[message.from_user.id]["bin"] = value
-        msg = bot.reply_to(message, "🏦 Passo 2/3: informe o banco:")
-        bot.register_next_step_handler(msg, gg_bank)
+    @bot.message_handler(commands=["add_gg_massa"])
+    def add_gg_massa_inicio(message):
+        if not is_admin(message): return
+        msg = bot.reply_to(message, "Informe o nome do banco")
+        bot.register_next_step_handler(msg, add_gg_massa_dados)
 
-    def gg_bank(message: Any) -> None:
-        value = (message.text or "").strip()
-        if not is_admin(message) or not value:
-            return
-        state[message.from_user.id]["bank"] = value
-        msg = bot.reply_to(
-            message, "🔐 Passo 3/3: informe os dados da GG (número|validade|cvv):"
-        )
-        bot.register_next_step_handler(msg, gg_content)
+    def add_gg_massa_dados(message: Any) -> None:
+        if not is_admin(message): return
+        banco = message.text.strip()
+        msg = bot.reply_to(message, f"✅ Banco '{banco}' definido.\nAgora envie a lista (um por linha):\nFormato: NÚMERO|VALIDADE|CVV")
+        state[message.from_user.id] = {"banco": banco}
+        bot.register_next_step_handler(msg, processar_gg_massa)
 
-    def gg_content(message: Any) -> None:
+    def processar_gg_massa(message: Any) -> None:
         current = state.pop(message.from_user.id, None)
-        value = (message.text or "").strip()
-        if not is_admin(message) or not current or not value:
-            return
-        gid, did = db.adicionar_gg_pendente(
-            current["bin"], current["bank"], value, message.from_user.id
-        )
-        suffix = (
-            f" Pareada automaticamente com dados #{did}; pronta para venda."
-            if did
-            else " Aguardando o próximo /add dados; ainda não está à venda."
-        )
-        bot.reply_to(message, f"✅ GG #{gid} cadastrada.{suffix}")
+        if not is_admin(message) or not current: return
+        linhas = message.text.split('\n')
+        sucesso = 0
+        for linha in linhas:
+            if '|' not in linha: continue
+            try:
+                dados = linha.strip()
+                bin_v = dados.split('|')[0][:6]
+                db.adicionar_gg_pendente(bin_v, current["banco"], dados, message.from_user.id)
+                sucesso += 1
+            except: continue
+        bot.reply_to(message, f"✅ {sucesso} GGs do banco {current['banco']} adicionadas!")
+
+    @bot.message_handler(commands=["add_dados_massa"])
+    def add_dados_massa(message: Any) -> None:
+        if not is_admin(message): return
+        texto = message.text.replace("/add_dados_massa", "").strip()
+        linhas = texto.split('\n')
+        sucesso = 0
+        for linha in linhas:
+            if '|' not in linha: continue
+            try:
+                nome, cpf = linha.split('|', 1)
+                p = protect()
+                cipher = p.encrypt(cpf.strip())
+                db.adicionar_dados_pendentes(nome.strip(), cipher, p.fingerprint(cpf.strip()), message.from_user.id)
+                sucesso += 1
+            except: continue
+        bot.reply_to(message, f"✅ {sucesso} registros de Dados adicionados com sucesso!")
 
     def data_name(message: Any) -> None:
         value = (message.text or "").strip()
         if not is_admin(message) or len(value) < 3:
             bot.reply_to(message, "❌ Nome inválido. Recomece com /add dados.")
             return
-        state[message.from_user.id]["name"] = value
+        state[message.from_user.id] = {"name": value}
         msg = bot.reply_to(message, "🪪 Passo 2/2: informe o CPF completo:")
         bot.register_next_step_handler(msg, data_cpf)
 
     def data_cpf(message: Any) -> None:
         current = state.pop(message.from_user.id, None)
-        if not is_admin(message) or not current:
-            return
+        if not is_admin(message) or not current: return
         try:
             p = protect()
             cipher = p.encrypt(message.text or "")
-            did, gid = db.adicionar_dados_pendentes(
-                current["name"],
-                cipher,
-                p.fingerprint(message.text or ""),
-                message.from_user.id,
-            )
+            did, gid = db.adicionar_dados_pendentes(current["name"], cipher, p.fingerprint(message.text or ""), message.from_user.id)
         except (CPFError, RuntimeError) as exc:
             bot.reply_to(message, f"❌ {exc} Recomece com /add dados.")
             return
-        suffix = (
-            f" Pareado automaticamente com GG #{gid}; par pronto para venda."
-            if gid
-            else " Aguardando a próxima /add gg; permanece pendente."
-        )
-        bot.reply_to(message, f"✅ Dados #{did} cadastrados com CPF protegido.{suffix}")
+        suffix = (" Pareado com GG #" + str(gid) if gid else " Aguardando próxima GG")
+        bot.reply_to(message, f"✅ Dados #{did} cadastrados.{suffix}")
 
     @bot.message_handler(commands=["add_esim"])
     def add_esim(message: Any) -> None:
-        if not is_admin(message):
-            return
+        if not is_admin(message): return
         msg = bot.reply_to(message, "Informe código|file_id_da_imagem do eSIM:")
         bot.register_next_step_handler(msg, save_esim)
 
@@ -323,14 +250,11 @@ def add_dados_massa(message: Any) -> None:
 
     @bot.message_handler(commands=["promocao"])
     def promotion(message: Any) -> None:
-        if not is_admin(message):
-            return
+        if not is_admin(message): return
         try:
             value = float((message.text or "").split(maxsplit=1)[1].replace(",", "."))
             db.definir_promocao(value, message.from_user.id)
-            bot.reply_to(
-                message, f"✅ Promoção de {value:g}% ativa nos depósitos em reais."
-            )
+            bot.reply_to(message, f"✅ Promoção de {value:g}% ativa.")
         except (IndexError, ValueError):
             bot.reply_to(message, "Uso: /promocao 100 (0 desativa).")
 
@@ -338,40 +262,25 @@ def add_dados_massa(message: Any) -> None:
     def queues(message: Any) -> None:
         if is_admin(message):
             gg, data, ready = db.obter_status_filas()
-            bot.reply_to(
-                message,
-                f"📦 GG aguardando dados: {gg}\n👤 Dados aguardando GG: {data}\n✅ Pares prontos: {ready}",
-            )
+            bot.reply_to(message, f"📦 GG: {gg}\n👤 Dados: {data}\n✅ Pares: {ready}")
 
     @bot.message_handler(commands=["ver_gg"])
     def view_gg(message: Any) -> None:
-        if not is_admin(message):
-            return
+        if not is_admin(message): return
         try:
             sid = int((message.text or "").split()[1])
             row = db.obter_gg_admin(sid, message.from_user.id)
-            if not row:
-                raise ValueError
-            cpf = (
-                protect().decrypt(str(row["cpf_ciphertext"]))
-                if row["cpf_ciphertext"]
-                else "Não pareado"
-            )
-            bot.reply_to(
-                message,
-                f"GG #{sid}\nStatus: {row['status']}\nBIN: {row['bin']}\nBanco: {row['banco']}\nGG: `{row['conteudo']}`\nNome: {row['nome']}\nCPF: `{cpf}`",
-                parse_mode="Markdown",
-            )
+            if not row: raise ValueError
+            cpf = protect().decrypt(str(row["cpf_ciphertext"])) if row["cpf_ciphertext"] else "Não pareado"
+            bot.reply_to(message, f"GG #{sid}\nStatus: {row['status']}\nBIN: {row['bin']}\nConteúdo: `{row['conteudo']}`\nCPF: `{cpf}`", parse_mode="Markdown")
         except (IndexError, ValueError, CPFError, RuntimeError):
-            bot.reply_to(message, "Uso: /ver_gg ID. Consulta auditada.")
+            bot.reply_to(message, "Uso: /ver_gg ID.")
 
     @bot.message_handler(commands=["relatorio"])
     def report(message: Any) -> None:
         if is_admin(message):
             total, revenue, cats = db.obter_dados_relatorio()
-            bot.reply_to(
-                message, f"📈 Vendas: {total}\n💰 Faturamento: R$ {revenue:.2f}\n{cats}"
-            )
+            bot.reply_to(message, f"📈 Vendas: {total}\n💰 R$ {revenue:.2f}\n{cats}")
 
     @bot.callback_query_handler(func=lambda call: True)
     def callbacks(call: Any) -> None:
@@ -379,235 +288,82 @@ def add_dados_massa(message: Any) -> None:
         bot.answer_callback_query(call.id)
         chat = call.message.chat.id
         uid = call.from_user.id
-        if call.data == "inicio":
-            home(chat, uid)
+        if call.data == "inicio": home(chat, uid)
         elif call.data == "conta":
             history = db.ultimos_depositos(uid)
-            lines = (
-                "\n".join(
-                    f"• R$ {r['valor_recebido']:.2f} + R$ {r['valor_bonus']:.2f} — {r['status']}"
-                    for r in history
-                )
-                or "Nenhum depósito."
-            )
-            bot.send_message(
-                chat,
-                f"👤 *MINHA CONTA*\n🆔 `{uid}`\n💰 Saldo: `R$ {db.obter_saldo(uid):.2f}`\n\n{lines}",
-                reply_markup=back(),
-                parse_mode="Markdown",
-            )
+            lines = "\n".join(f"• R$ {r['valor_recebido']:.2f} — {r['status']}" for r in history) or "Nenhum depósito."
+            bot.send_message(chat, f"👤 *MINHA CONTA*\n🆔 `{uid}`\n💰 Saldo: `R$ {db.obter_saldo(uid):.2f}`\n\n{lines}", reply_markup=back(), parse_mode="Markdown")
         elif call.data == "saldo":
             promo = db.obter_promocao()
-            msg = bot.send_message(
-                chat,
-                f"➕ *ADICIONAR SALDO*\nMínimo: `R$ 10,00`\nPromoção: +{promo:g}%\nDigite o valor em reais:",
-                parse_mode="Markdown",
-            )
+            msg = bot.send_message(chat, f"➕ Digite o valor em reais (Mín: R$ 10,00):", parse_mode="Markdown")
             bot.register_next_step_handler(msg, deposit_value)
         elif call.data == "menu_gg":
             groups = db.listar_estoque_gg()
             if not groups:
-                bot.send_message(
-                    chat, "❌ Nenhuma GG completa disponível.", reply_markup=back()
-                )
+                bot.send_message(chat, "❌ Sem estoque.", reply_markup=back())
                 return
             markup = types.InlineKeyboardMarkup(row_width=1)
-            for bin_value, bank, count in groups:
-                markup.add(
-                    types.InlineKeyboardButton(
-                        f"BIN {bin_value} • {bank} • {count} • R$ 4,00",
-                        callback_data=f"sg|{quote(bin_value)}|{quote(bank)}",
-                    )
-                )
-            bot.send_message(chat, "Escolha a BIN e o banco:", reply_markup=markup)
+            for bin_v, bank, count in groups:
+                markup.add(types.InlineKeyboardButton(f"BIN {bin_v} • {bank} • {count} un", callback_data=f"sg|{quote(bin_v)}|{quote(bank)}"))
+            bot.send_message(chat, "Escolha:", reply_markup=markup)
         elif call.data.startswith("sg|"):
-            _, encoded_bin, encoded_bank = call.data.split("|", 2)
-            bin_value, bank = unquote(encoded_bin), unquote(encoded_bank)
-            inv = invoice(f"GG BIN {bin_value} - {bank}", PRECOS["gg"])
-            if not inv:
-                bot.send_message(chat, "❌ Não foi possível criar a fatura BRL.")
-                return
-            markup = types.InlineKeyboardMarkup()
-            markup.add(
-                types.InlineKeyboardButton("Pagar", url=inv.url),
-                types.InlineKeyboardButton(
-                    "Confirmar",
-                    callback_data=f"vg|{inv.invoice_id}|{quote(bin_value)}|{quote(bank)}",
-                ),
-            )
-            bot.send_message(
-                chat, "Fatura: `R$ 4,00`", reply_markup=markup, parse_mode="Markdown"
-            )
+            _, bin_v, bank = call.data.split("|", 2)
+            inv = invoice(f"GG {unquote(bin_v)}", PRECOS["gg"])
+            if not inv: return
+            markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("Pagar", url=inv.url), types.InlineKeyboardButton("Confirmar", callback_data=f"vg|{inv.invoice_id}|{bin_v}|{bank}"))
+            bot.send_message(chat, "Fatura: R$ 4,00", reply_markup=markup)
         elif call.data.startswith("buy_"):
-            category = call.data[4:]
-            if not db.contar_estoque_categoria(category):
-                bot.send_message(chat, "❌ Sem estoque.")
-                return
-            inv = invoice(category.title(), PRECOS[category])
-            if not inv:
-                bot.send_message(chat, "❌ Falha ao gerar fatura BRL.")
-                return
-            markup = types.InlineKeyboardMarkup()
-            markup.add(
-                types.InlineKeyboardButton("Pagar", url=inv.url),
-                types.InlineKeyboardButton(
-                    "Confirmar", callback_data=f"vp|{category}|{inv.invoice_id}"
-                ),
-            )
-            bot.send_message(
-                chat,
-                f"Fatura: `R$ {PRECOS[category]:.2f}`",
-                reply_markup=markup,
-                parse_mode="Markdown",
-            )
+            cat = call.data[4:]
+            inv = invoice(cat.title(), PRECOS[cat])
+            if not inv: return
+            markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("Pagar", url=inv.url), types.InlineKeyboardButton("Confirmar", callback_data=f"vp|{cat}|{inv.invoice_id}"))
+            bot.send_message(chat, f"Fatura: R$ {PRECOS[cat]:.2f}", reply_markup=markup)
         elif call.data.startswith("vg|"):
             _, inv_id, bn, bk = call.data.split("|", 3)
-            if not paid(inv_id):
-                bot.send_message(chat, "⚠️ Pagamento pendente.")
-                return
-            finish(
-                chat,
-                uid,
-                "gg",
-                *db.concluir_compra_fatura(
-                    inv_id, uid, "gg", 4, unquote(bn), unquote(bk)
-                ),
-            )
+            if not paid(inv_id): bot.send_message(chat, "⚠️ Pendente."); return
+            finish(chat, uid, "gg", *db.concluir_compra_fatura(inv_id, uid, "gg", 4, unquote(bn), unquote(bk)))
         elif call.data.startswith("vp|"):
-            _, category, inv_id = call.data.split("|", 2)
-            if not paid(inv_id):
-                bot.send_message(chat, "⚠️ Pagamento pendente.")
-                return
-            finish(
-                chat,
-                uid,
-                category,
-                *db.concluir_compra_fatura(
-                    inv_id, uid, category, float(PRECOS[category])
-                ),
-            )
+            _, cat, inv_id = call.data.split("|", 2)
+            if not paid(inv_id): bot.send_message(chat, "⚠️ Pendente."); return
+            finish(chat, uid, cat, *db.concluir_compra_fatura(inv_id, uid, cat, float(PRECOS[cat])))
         elif call.data.startswith("vd|"):
             inv_id = call.data.split("|", 1)[1]
-            if not paid(inv_id):
-                bot.send_message(chat, "⚠️ Depósito pendente.")
-                return
-            result, received, bonus, credited = db.confirmar_deposito(inv_id, uid)
-            if result == "ok":
-                bot.send_message(
-                    chat,
-                    f"✅ Recebido: `R$ {received:.2f}`\n🎁 Bônus: `R$ {bonus:.2f}`\n💰 Crédito: `R$ {credited:.2f}`",
-                    reply_markup=back(),
-                    parse_mode="Markdown",
-                )
-            else:
-                bot.send_message(
-                    chat, "ℹ️ Depósito já processado; nenhum crédito duplicado."
-                )
+            if not paid(inv_id): bot.send_message(chat, "⚠️ Pendente."); return
+            res, r, b, c = db.confirmar_deposito(inv_id, uid)
+            if res == "ok": bot.send_message(chat, f"✅ Crédito de R$ {c:.2f} aplicado.")
+            else: bot.send_message(chat, "ℹ️ Já processado.")
 
     def deposit_value(message: Any) -> None:
         try:
-            value = Decimal((message.text or "").replace(",", ".")).quantize(
-                Decimal("0.01")
-            )
-        except InvalidOperation:
-            bot.reply_to(message, "❌ Valor inválido.")
-            return
-        if value < MIN_DEPOSITO:
-            bot.reply_to(message, "❌ Depósito mínimo: R$ 10,00.")
-            return
-        inv = invoice("Depósito de saldo em reais", value)
-        if not inv:
-            bot.reply_to(message, "❌ Falha ao gerar fatura BRL.")
-            return
-        db.criar_deposito(inv.invoice_id, message.from_user.id, float(value))
-        bonus = (value * Decimal(str(db.obter_promocao())) / 100).quantize(
-            Decimal("0.01")
-        )
-        markup = types.InlineKeyboardMarkup()
-        markup.add(
-            types.InlineKeyboardButton("Pagar", url=inv.url),
-            types.InlineKeyboardButton(
-                "Confirmar", callback_data=f"vd|{inv.invoice_id}"
-            ),
-        )
-        bot.reply_to(
-            message,
-            f"Valor real: `R$ {value:.2f}`\nBônus estimado: `R$ {bonus:.2f}`",
-            reply_markup=markup,
-            parse_mode="Markdown",
-        )
+            val = Decimal((message.text or "").replace(",", ".")).quantize(Decimal("0.01"))
+            if val < MIN_DEPOSITO: raise ValueError
+        except: bot.reply_to(message, "❌ Valor inválido."); return
+        inv = invoice("Saldo", val)
+        if not inv: return
+        db.criar_deposito(inv.invoice_id, message.from_user.id, float(val))
+        markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("Pagar", url=inv.url), types.InlineKeyboardButton("Confirmar", callback_data=f"vd|{inv.invoice_id}"))
+        bot.reply_to(message, f"Fatura: R$ {val:.2f}", reply_markup=markup)
 
-    def finish(
-        chat: int,
-        uid: int,
-        category: str,
-        status: str,
-        sid: int | None,
-        content: str | None,
-    ) -> None:
-        if status == "ja_processado":
-            bot.send_message(
-                chat, "ℹ️ Fatura já processada; não houve entrega duplicada."
-            )
-            return
-        if status != "ok" or sid is None or content is None:
-            bot.send_message(chat, "❌ Sem estoque completo. Contate o administrador.")
-            return
-        if category == "gg":
-            data = db.obter_dados_gg_para_entrega(sid, uid)
-            if not data:
-                bot.send_message(
-                    chat, "❌ Par de GG inconsistente. Contate o administrador."
-                )
-                return
-            try:
-                cpf = protect().decrypt(str(data["cpf_ciphertext"]))
-            except (CPFError, RuntimeError):
-                bot.send_message(
-                    chat, "❌ Falha segura ao abrir CPF. Contate o administrador."
-                )
-                return
-            bot.send_message(
-                chat,
-                f"⚡ *GG ENTREGUE*\nBanco: {data['banco']}\nBIN: `{data['bin']}`\nGG: `{content}`\nNome: {data['nome']}\nCPF: `{cpf}`",
-                parse_mode="Markdown",
-            )
-        elif category == "esim":
-            file_id, sep, code = content.partition("|")
-            (
-                bot.send_photo(
-                    chat, file_id, caption=f"eSIM: `{code}`", parse_mode="Markdown"
-                )
-                if sep
-                else bot.send_message(chat, content)
-            )
-        else:
-            bot.send_message(
-                chat, f"⚡ Streaming entregue:\n`{content}`", parse_mode="Markdown"
-            )
+    def finish(chat, uid, cat, status, sid, content):
+        if status != "ok": bot.send_message(chat, "❌ Erro ou sem estoque."); return
+        if cat == "gg":
+            d = db.obter_dados_gg_para_entrega(sid, uid)
+            try: cpf = protect().decrypt(str(d["cpf_ciphertext"]))
+            except: cpf = "Erro decriptação"
+            bot.send_message(chat, f"⚡ *ENTREGUE*\nGG: `{content}`\nNome: {d['nome']}\nCPF: `{cpf}`", parse_mode="Markdown")
+        else: bot.send_message(chat, f"⚡ Entregue: `{content}`", parse_mode="Markdown")
 
-
-if __name__ == "__main__":
-    running = require_bot()
-    while True:
-        try:
-            running.infinity_polling(
-                timeout=20, long_polling_timeout=20, skip_pending=True
-            )
-        except Exception as exc:
-            LOG.exception("Erro no polling: %s", exc)
-            time.sleep(15) 
-            
-
-# Comando exclusivo para o administrador
 @bot.message_handler(commands=['comandos'])
 def listar_comandos(message):
-    if not is_admin(message): 
-        return
-    
-    texto = "🛠 **Menu do Administrador:**\n/add_gg_massa - Adicionar novos dados\n/status - Verificar bot"
-    bot.reply_to(message, texto, parse_mode="Markdown")
+    if not is_admin(message): return
+    bot.reply_to(message, "🛠 **Admin:**\n/add_gg_massa\n/add_dados_massa\n/status", parse_mode="Markdown")
 
-@bot.message_handler(func=lambda message: True)
-def comando_invalido(message):
-    bot.reply_to(message, "❌ Comando não reconhecido. Use /ajuda para ver as opções disponíveis.")
+if __name__ == "__main__":
+    while True:
+        try:
+            bot.infinity_polling(skip_pending=True)
+        except Exception as exc:
+            LOG.exception("Erro: %s", exc)
+            time.sleep(15)
+
+```
