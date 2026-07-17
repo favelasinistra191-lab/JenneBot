@@ -183,14 +183,11 @@ if bot:
                 message, "💳 /add gg — passo 1/3: informe a BIN (6 a 8 dígitos):"
             )
             bot.register_next_step_handler(msg, gg_bin)
-        elif option == "dados":
-            try:
-
-    @bot.message_handler(commands=["add_gg_massa"])
+@bot.message_handler(commands=["add_gg_massa"])
 def add_gg_massa_inicio(message: Any) -> None:
-    if not is_admin(message): return
-    msg = bot.reply_to(message, "🏦 Informe o nome do banco para todos os cartões desta lista:")
-    bot.register_next_step_handler(msg, add_gg_massa_dados)
+if not is_admin(message): return
+msg = bot.reply_to(message, "🏦 Informe o nome do banco para todos os cartões desta lista:")
+bot.register_next_step_handler(msg, add_gg_massa_dados)
 
 def add_gg_massa_dados(message: Any) -> None:
     if not is_admin(message): return
