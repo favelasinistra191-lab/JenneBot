@@ -229,14 +229,7 @@ def add_dados_massa(message: Any) -> None:
             db.adicionar_dados_pendentes(nome.strip(), cipher, p.fingerprint(cpf.strip()), message.from_user.id)
             sucesso += 1
         except: continue
-    bot.reply_to(message, f"✅ {sucesso} registros de Dados adicionados com sucesso!")
-
-        protect()
-    except (RuntimeError, CPFError) as exc:
-        bot.reply_to(message, f"❌ {exc}")
-        return
-            state[message.from_user.id] = {"flow": "dados"}
-            msg = bot.reply_to(
+    bot.reply_to(message, f"✅ {sucesso} registros de Dados adicionados com sucesso! "
                 message, "👤 /add dados — passo 1/2: informe o nome completo:"
             )
             bot.register_next_step_handler(msg, data_name)
