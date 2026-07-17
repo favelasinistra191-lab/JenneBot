@@ -5,3 +5,5 @@ pytest>=8,<9
 black>=24,<26
 ruff>=0.6,<1
 mypy>=1.10,<2
+flask
+
