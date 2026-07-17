@@ -1,0 +1,8 @@
+GG R$ 4,00: /add gg
+DADOS: /add dados
+STREAMING R$ 12,00: /add streaming LOGIN|SENHA|OBS
+eSIM R$ 20,00: /add_esim
+PROMOÇÃO: /promocao 100
+FILAS FIFO: /filas
+
+GG e dados são cadastrados separadamente e pareados pela ordem de chegada. Só par completo entra no estoque visível ao cliente.
