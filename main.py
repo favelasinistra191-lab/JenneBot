@@ -600,4 +600,18 @@ if __name__ == "__main__":
             )
         except Exception as exc:
             LOG.exception("Erro no polling: %s", exc)
-            time.sleep(15)
+            time.sleep(15) 
+            
+
+# Comando exclusivo para o administrador
+@bot.message_handler(commands=['comandos'])
+def listar_comandos(message):
+    if not is_admin(message): 
+        return
+    
+    texto = "🛠 **Menu do Administrador:**\n/add_gg_massa - Adicionar novos dados\n/status - Verificar bot"
+    bot.reply_to(message, texto, parse_mode="Markdown")
+
+@bot.message_handler(func=lambda message: True)
+def comando_invalido(message):
+    bot.reply_to(message, "❌ Comando não reconhecido. Use /ajuda para ver as opções disponíveis.")
