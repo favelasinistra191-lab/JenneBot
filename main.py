@@ -1,3 +1,5 @@
+from keep_alive import keep_alive
+keep_alive()
 """Bot Telegram de GG, streaming, eSIM e saldo em reais (BRL)."""
 
 from __future__ import annotations
