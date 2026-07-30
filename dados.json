@@ -1,5 +1,12 @@
 {
-    "usuarios": [],
+    "usuarios": [
+        {
+            "user_id": 8776521959,
+            "nome": "JenneStoreBott",
+            "username": "",
+            "saldo": 0.0
+        }
+    ],
     "produtos": [],
     "vendas": []
 }
