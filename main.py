@@ -307,7 +307,6 @@ def cmd_gerar_gift(message):
         session.execute(text("INSERT INTO gift_cards (codigo, valor, usado) VALUES (:c, :v, 0)"), {"c": codigo_gift, "v": valor})
         session.commit()
         
-        # Resposta detalhada e explicativa para facilitar cópia e envio ao cliente
         bot_username = bot.get_me().username
         mensagem_formatada = (
             f"🎁 **Gift Card Gerado com Sucesso!**\n\n"
@@ -482,11 +481,9 @@ def callback_query(call):
         bin_escolhida = data.split("_")[2]
         bot.answer_callback_query(call.id)
         
-        # Preço da GG ajustado para R$ 4,00
         status, res_gg, res_dados, banco_item, bandeira_item = db.realizar_compra_item_casado(user_id, 'gg', 4.0, bin_v=bin_escolhida)
         
         if status == "ok":
-            # Recibo detalhado, elegante, profissional e bem organizado
             msg = (
                 f"✅ **PEDIDO APROVADO COM SUCESSO!**\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -516,16 +513,17 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando com proteção contra conflito (409)...")
+    LOG.info("Bot rodando com proteção definitiva contra conflito (409)...")
     
     try:
         bot.remove_webhook()
     except Exception:
         pass
 
+    # Utiliza o infinity_polling com skip_pending para limpar requisições travadas anteriores
     while True:
         try:
-            bot.polling(none_stop=True, interval=0, timeout=30, long_polling_timeout=30)
+            bot.infinity_polling(skip_pending=True, timeout=30, long_polling_timeout=30)
         except Exception as e:
             LOG.error(f"Erro na conexão: {e}")
             import time
