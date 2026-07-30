@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Definitiva Completa: Visual Profissional + Persistência Total
+Versão Definitiva Blindada: Estado via Banco de Dados (Imune a Restarts/Instâncias)
 """
 import os
 import logging
@@ -19,8 +19,6 @@ LOG = logging.getLogger("JenneBot")
 
 bot = telebot.TeleBot(config.TOKEN, threaded=True)
 db.criar_tabelas()
-
-ADMIN_ESTADO = {}
 
 app = Flask(__name__)
 
@@ -134,12 +132,16 @@ def cmd_add_gg_etapa1(message):
         return
     
     bandeira, banco = consultar_bin(bin6)
-    ADMIN_ESTADO[message.from_user.id] = {
+    
+    dados = db.carregar_dados()
+    dados["admin_pendente"] = {
+        "admin_id": message.from_user.id,
         "tipo": "gg",
         "bin": bin6,
         "banco": banco,
         "bandeira": bandeira
     }
+    db.salvar_dados(dados)
 
     bot.reply_to(
         message, 
@@ -160,10 +162,13 @@ def cmd_add_streaming_etapa1(message):
         bot.reply_to(message, "⚠️ Informe o nome. Ex: `/add_streaming NETFLIX`", parse_mode="Markdown")
         return
     
-    ADMIN_ESTADO[message.from_user.id] = {
+    dados = db.carregar_dados()
+    dados["admin_pendente"] = {
+        "admin_id": message.from_user.id,
         "tipo": "streaming",
         "nome_streaming": nome_streaming
     }
+    db.salvar_dados(dados)
 
     bot.reply_to(
         message, 
@@ -173,21 +178,26 @@ def cmd_add_streaming_etapa1(message):
     )
 
 
-@bot.message_handler(func=lambda message: message.from_user.id in ADMIN_ESTADO and not message.text.startswith('/'))
+@bot.message_handler(func=lambda message: message.from_user.id == config.ADMIN_ID and not message.text.startswith('/'))
 def processar_etapa2(message):
-    admin_id = message.from_user.id
-    estado = ADMIN_ESTADO.pop(admin_id, None)
-    if not estado:
+    dados = db.carregar_dados()
+    pendente = dados.get("admin_pendente")
+    
+    if not pendente or pendente.get("admin_id") != message.from_user.id:
         return
 
-    tipo = estado.get("tipo")
+    # Limpa o pendente para processar apenas uma vez
+    dados["admin_pendente"] = {}
+    db.salvar_dados(dados)
+
+    tipo = pendente.get("tipo")
     texto_bruto = message.text.strip()
     linhas = texto_bruto.replace('\r\n', '\n').split('\n')
     
     if tipo == "gg":
-        bin6 = estado["bin"]
-        banco = estado["banco"]
-        bandeira = estado["bandeira"]
+        bin6 = pendente["bin"]
+        banco = pendente["banco"]
+        bandeira = pendente["bandeira"]
         
         cartoes = []
         for linha in linhas:
@@ -214,7 +224,7 @@ def processar_etapa2(message):
         bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n💳 **BIN:** `{bin6}`\n📦 **Adicionados:** `+{adicionados} GGs`", parse_mode="Markdown")
 
     elif tipo == "streaming":
-        nome_streaming = estado["nome_streaming"]
+        nome_streaming = pendente["nome_streaming"]
         contas = [l.strip() for l in linhas if l.strip()]
         if not contas:
             bot.reply_to(message, "❌ Nenhuma conta válida encontrada. Envie novamente.")
@@ -263,7 +273,7 @@ def cmd_limpar_estoque(message):
         return
     try:
         dados = db.carregar_dados()
-        dados["estoque"] = [e for e in dados.get("estoque", []) if e.get("vendido") == 1]
+        dados["estoque"] = [e for e in dados.get("estoque", []) if e.get("vendido"] == 1]
         dados["dados_titular"] = [t for t in dados.get("dados_titular", []) if t.get("usado") == 1]
         db.salvar_dados(dados)
         bot.reply_to(message, "🧹 **Estoque não vendido limpo com sucesso!**", parse_mode="Markdown")
@@ -481,7 +491,7 @@ def callback_query(call):
         item_alvo["vendido"] = 1
         db.salvar_dados(dados)
         
-        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido com Sucesso!**\n\n📱 **Dados de Ativação:**\n`{item_alvo.get('conteudo')}`\n⏱️ *Você tem 10 minutos para troca em caso de problemas.*", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido com Sucesso!**\n\n📱 **Dados de Ativação:**\n`{item_alvo.get('conteudo')}`\n⏱️ *⏱️ Você tem 10 minutos para troca em caso de problemas.*", parse_mode="Markdown")
 
     elif data == "menu_gg":
         bot.answer_callback_query(call.id)
