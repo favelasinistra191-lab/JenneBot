@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Definitiva Completa: Preços Ajustados + Recibo Profissional + Gift com Link
+Versão Definitiva Completa: Visual Profissional + Persistência Total
 """
 import os
 import logging
@@ -121,9 +121,6 @@ def cmd_admin(message):
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
 
-# ==========================================
-# SISTEMA DE ABASTECIMENTO EM 2 ETAPAS (GG)
-# ==========================================
 @bot.message_handler(commands=['add_gg'])
 def cmd_add_gg_etapa1(message):
     if message.from_user.id != config.ADMIN_ID:
@@ -153,9 +150,6 @@ def cmd_add_gg_etapa1(message):
     )
 
 
-# ==========================================
-# SISTEMA DE ABASTECIMENTO EM 2 ETAPAS (STREAMING)
-# ==========================================
 @bot.message_handler(commands=['add_streaming'])
 def cmd_add_streaming_etapa1(message):
     if message.from_user.id != config.ADMIN_ID:
@@ -179,9 +173,6 @@ def cmd_add_streaming_etapa1(message):
     )
 
 
-# ==========================================
-# OUVINTE ÚNICO PARA A ETAPA 2 (GG OU STREAMING)
-# ==========================================
 @bot.message_handler(func=lambda message: message.from_user.id in ADMIN_ESTADO and not message.text.startswith('/'))
 def processar_etapa2(message):
     admin_id = message.from_user.id
@@ -224,7 +215,6 @@ def processar_etapa2(message):
 
     elif tipo == "streaming":
         nome_streaming = estado["nome_streaming"]
-        
         contas = [l.strip() for l in linhas if l.strip()]
         if not contas:
             bot.reply_to(message, "❌ Nenhuma conta válida encontrada. Envie novamente.")
@@ -238,7 +228,6 @@ def processar_etapa2(message):
         bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n🎬 **Streaming:** `{nome_streaming}`\n📦 **Adicionadas:** `+{adicionados} Contas`", parse_mode="Markdown")
 
 
-# --- OUTROS COMANDOS DIRETOS ---
 @bot.message_handler(commands=['add_dados'])
 def cmd_add_dados(message):
     if message.from_user.id != config.ADMIN_ID:
@@ -272,18 +261,14 @@ def cmd_add_esim(message):
 def cmd_limpar_estoque(message):
     if message.from_user.id != config.ADMIN_ID:
         return
-    session = db.SessionLocal()
     try:
-        from sqlalchemy import text
-        session.execute(text("DELETE FROM estoque WHERE vendido = 0"))
-        session.execute(text("DELETE FROM dados_titular WHERE usado = 0"))
-        session.commit()
-        bot.reply_to(message, "🧹 **Estoque limpo com sucesso!**", parse_mode="Markdown")
+        dados = db.carregar_dados()
+        dados["estoque"] = [e for e in dados.get("estoque", []) if e.get("vendido") == 1]
+        dados["dados_titular"] = [t for t in dados.get("dados_titular", []) if t.get("usado") == 1]
+        db.salvar_dados(dados)
+        bot.reply_to(message, "🧹 **Estoque não vendido limpo com sucesso!**", parse_mode="Markdown")
     except Exception as e:
-        session.rollback()
         bot.reply_to(message, f"❌ Erro: {e}")
-    finally:
-        session.close()
 
 
 @bot.message_handler(commands=['gerar_gift'])
@@ -301,11 +286,17 @@ def cmd_gerar_gift(message):
         return
     
     codigo_gift = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
-    session = db.SessionLocal()
     try:
-        from sqlalchemy import text
-        session.execute(text("INSERT INTO gift_cards (codigo, valor, usado) VALUES (:c, :v, 0)"), {"c": codigo_gift, "v": valor})
-        session.commit()
+        dados = db.carregar_dados()
+        if "gift_cards" not in dados:
+            dados["gift_cards"] = []
+            
+        dados["gift_cards"].append({
+            "codigo": codigo_gift,
+            "valor": valor,
+            "usado": 0
+        })
+        db.salvar_dados(dados)
         
         bot_username = bot.get_me().username
         mensagem_formatada = (
@@ -323,10 +314,7 @@ def cmd_gerar_gift(message):
         )
         bot.reply_to(message, mensagem_formatada, parse_mode="Markdown")
     except Exception as e:
-        session.rollback()
         bot.reply_to(message, f"❌ Erro: {e}")
-    finally:
-        session.close()
 
 
 @bot.message_handler(commands=['resgatar'])
@@ -337,26 +325,44 @@ def cmd_resgatar(message):
         bot.reply_to(message, "⚠️ Informe o código. Ex: `/resgatar [codigo]`", parse_mode="Markdown")
         return
     codigo = args[1].strip()
-    session = db.SessionLocal()
+    
     try:
-        from sqlalchemy import text
-        res = session.execute(text("SELECT id, valor, usado FROM gift_cards WHERE codigo = :c"), {"c": codigo}).fetchone()
-        if not res or res[2] == 1:
+        dados = db.carregar_dados()
+        gift_encontrado = None
+        for g in dados.get("gift_cards", []):
+            if g.get("codigo") == codigo:
+                gift_encontrado = g
+                break
+                
+        if not gift_encontrado or gift_encontrado.get("usado") == 1:
             bot.reply_to(message, "❌ Gift inválido ou já utilizado.")
             return
-        gift_id, valor = res[0], res[1]
-        session.execute(text("UPDATE gift_cards SET usado = 1 WHERE id = :id"), {"id": gift_id})
-        session.execute(text("UPDATE usuarios SET saldo = saldo + :v WHERE user_id = :u"), {"v": valor, "u": user_id})
-        session.commit()
+            
+        valor = gift_encontrado.get("valor")
+        gift_encontrado["usado"] = 1
+        
+        usuario_encontrado = None
+        for u in dados.get("usuarios", []):
+            if u["user_id"] == user_id:
+                usuario_encontrado = u
+                break
+                
+        if usuario_encontrado:
+            usuario_encontrado["saldo"] = usuario_encontrado.get("saldo", 0.0) + valor
+        else:
+            dados["usuarios"].append({
+                "user_id": user_id,
+                "nome": message.from_user.first_name or "Cliente",
+                "username": message.from_user.username or "",
+                "saldo": valor
+            })
+            
+        db.salvar_dados(dados)
         bot.reply_to(message, f"🎉 **Resgate efetuado!** Adicionado R$ {valor:.2f} ao seu saldo.", parse_mode="Markdown")
     except Exception as e:
-        session.rollback()
         bot.reply_to(message, f"❌ Erro: {e}")
-    finally:
-        session.close()
 
 
-# --- CALLBACKS DO CLIENTE ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     user_id = call.from_user.id
@@ -377,18 +383,21 @@ def callback_query(call):
         
     elif data == "cat_streaming":
         bot.answer_callback_query(call.id)
-        conn = db.sqlite3.connect(db.DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("SELECT bandeira, COUNT(*) FROM estoque WHERE categoria = 'streaming' AND vendido = 0 GROUP BY bandeira")
-        rows = cursor.fetchall()
-        conn.close()
+        dados = db.carregar_dados()
+        estoque = dados.get("estoque", [])
         
-        if not rows:
+        streamings_disp = {}
+        for item in estoque:
+            if item.get("categoria") == 'streaming' and item.get("vendido") == 0:
+                band = item.get("bandeira")
+                streamings_disp[band] = streamings_disp.get(band, 0) + 1
+                
+        if not streamings_disp:
             bot.send_message(call.message.chat.id, "❌ Nenhuma conta de Streaming disponível no momento.")
             return
             
         markup = types.InlineKeyboardMarkup(row_width=1)
-        for nome_streaming, total_qtd in rows:
+        for nome_streaming, total_qtd in streamings_disp.items():
             markup.add(types.InlineKeyboardButton(f"🎬 {nome_streaming} • Estoque: {total_qtd} (R$ 12,00)", callback_data=f"comprar_stream_{nome_streaming}"))
         markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
         bot.send_message(call.message.chat.id, "🛒 **Selecione o Streaming Desejado:**", reply_markup=markup, parse_mode="Markdown")
@@ -397,70 +406,82 @@ def callback_query(call):
         nome_streaming = data.replace("comprar_stream_", "")
         bot.answer_callback_query(call.id)
         
+        dados = db.carregar_dados()
         preco = 12.0
-        conn = db.sqlite3.connect(db.DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("SELECT saldo FROM usuarios WHERE user_id = ?", (user_id,))
-        saldo = cursor.fetchone()[0]
-        if saldo < preco:
-            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
-            conn.close()
-            return
-            
-        cursor.execute("SELECT id, conteudo FROM estoque WHERE categoria = 'streaming' AND bandeira = ? AND vendido = 0 LIMIT 1", (nome_streaming,))
-        item = cursor.fetchone()
-        if not item:
-            bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta conta.")
-            conn.close()
-            return
-            
-        item_id, conteudo_conta = item[0], item[1]
-        cursor.execute("UPDATE usuarios SET saldo = saldo - ? WHERE user_id = ?", (preco, user_id))
-        cursor.execute("UPDATE estoque SET vendido = 1 WHERE id = ?", (item_id,))
-        conn.commit()
-        conn.close()
         
-        bot.send_message(call.message.chat.id, f"✅ **COMPRA APROVADA!**\n\n🎬 **Serviço:** `{nome_streaming}`\n🔑 **Conta:** `{conteudo_conta}`\n⏱️ *Você tem 10 minutos para reportar caso haja problemas.*", parse_mode="Markdown")
+        user = None
+        for u in dados.get("usuarios", []):
+            if u["user_id"] == user_id:
+                user = u
+                break
+                
+        if not user or user.get("saldo", 0.0) < preco:
+            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
+            return
+            
+        item_alvo = None
+        for item in dados.get("estoque", []):
+            if item.get("categoria") == 'streaming' and item.get("bandeira") == nome_streaming and item.get("vendido") == 0:
+                item_alvo = item
+                break
+                
+        if not item_alvo:
+            bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta conta.")
+            return
+            
+        user["saldo"] -= preco
+        item_alvo["vendido"] = 1
+        db.salvar_dados(dados)
+        
+        bot.send_message(call.message.chat.id, f"✅ **COMPRA APROVADA!**\n\n🎬 **Serviço:** `{nome_streaming}`\n🔑 **Conta:** `{item_alvo.get('conteudo')}`\n⏱️ *Você tem 10 minutos para reportar caso haja problemas.*", parse_mode="Markdown")
 
     elif data == "cat_esim":
         bot.answer_callback_query(call.id)
-        conn = db.sqlite3.connect(db.DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("SELECT id FROM estoque WHERE categoria = 'esim' AND vendido = 0 LIMIT 5")
-        rows = cursor.fetchall()
-        conn.close()
-        if not rows:
+        dados = db.carregar_dados()
+        esims = [e for e in dados.get("estoque", []) if e.get("categoria") == 'esim' and e.get("vendido") == 0][:5]
+        
+        if not esims:
             bot.send_message(call.message.chat.id, "❌ Nenhum eSIM disponível no momento.")
             return
+            
         markup = types.InlineKeyboardMarkup(row_width=1)
-        for item_id, in rows:
-            markup.add(types.InlineKeyboardButton(f"📱 Comprar eSIM Global • R$ 20.00", callback_data=f"compras_esim_{item_id}"))
+        for item in esims:
+            markup.add(types.InlineKeyboardButton(f"📱 Comprar eSIM Global • R$ 20.00", callback_data=f"compras_esim_{item.get('id')}"))
         markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
         bot.send_message(call.message.chat.id, "📱 **eSIM Globais Disponíveis:**", reply_markup=markup, parse_mode="Markdown")
 
     elif data.startswith("compras_esim_"):
         item_id = int(data.split("_")[2])
         bot.answer_callback_query(call.id)
-        conn = db.sqlite3.connect(db.DB_NAME)
-        cursor = conn.cursor()
-        cursor.execute("SELECT saldo FROM usuarios WHERE user_id = ?", (user_id,))
-        saldo = cursor.fetchone()[0]
+        
+        dados = db.carregar_dados()
         preco = 20.0
-        if saldo < preco:
+        
+        user = None
+        for u in dados.get("usuarios", []):
+            if u["user_id"] == user_id:
+                user = u
+                break
+                
+        if not user or user.get("saldo", 0.0) < preco:
             bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
-            conn.close()
             return
-        cursor.execute("SELECT conteudo FROM estoque WHERE id = ? AND vendido = 0", (item_id,))
-        item = cursor.fetchone()
-        if not item:
+            
+        item_alvo = None
+        for item in dados.get("estoque", []):
+            if item.get("id") == item_id and item.get("vendido") == 0:
+                item_alvo = item
+                break
+                
+        if not item_alvo:
             bot.send_message(call.message.chat.id, "❌ Item esgotado.")
-            conn.close()
             return
-        cursor.execute("UPDATE usuarios SET saldo = saldo - ? WHERE user_id = ?", (preco, user_id))
-        cursor.execute("UPDATE estoque SET vendido = 1 WHERE id = ?", (item_id,))
-        conn.commit()
-        conn.close()
-        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido com Sucesso!**\n\n📱 **Dados de Ativação:**\n`{item[0]}`\n⏱️ *Você tem 10 minutos para troca em caso de problemas.*", parse_mode="Markdown")
+            
+        user["saldo"] -= preco
+        item_alvo["vendido"] = 1
+        db.salvar_dados(dados)
+        
+        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido com Sucesso!**\n\n📱 **Dados de Ativação:**\n`{item_alvo.get('conteudo')}`\n⏱️ *Você tem 10 minutos para troca em caso de problemas.*", parse_mode="Markdown")
 
     elif data == "menu_gg":
         bot.answer_callback_query(call.id)
@@ -520,7 +541,6 @@ if __name__ == "__main__":
     except Exception:
         pass
 
-    # Utiliza o infinity_polling com skip_pending para limpar requisições travadas anteriores
     while True:
         try:
             bot.infinity_polling(skip_pending=True, timeout=30, long_polling_timeout=30)
