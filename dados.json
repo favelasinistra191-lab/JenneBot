@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 0.0
+            "saldo": 100.0
         }
     ],
     "produtos": [],
@@ -13,7 +13,7 @@
         {
             "codigo": "GIFT-6B07CD04",
             "valor": 100.0,
-            "usado": 0
+            "usado": 1
         }
     ]
 }
