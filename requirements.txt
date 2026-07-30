@@ -1,3 +1,7 @@
+requests
+pyTelegramBotAPI
+flask
+python-dotenv
 telebot
 flask
 requests
