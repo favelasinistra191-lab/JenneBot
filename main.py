@@ -1,7 +1,7 @@
 """
 Arquivo Principal - JenneStoreBot
 Gerenciamento completo do Bot do Telegram, Servidor Web Flask, Painel Admin,
-Adição de GGs em massa com BIN/Banco, Streaming, eSIM e Sistema de Gifts.
+Adição de GGs em massa, Adição de Dados em Massa, Streaming, eSIM e Gifts.
 """
 import os
 import logging
@@ -36,21 +36,47 @@ def run_web_server():
     app.run(host="0.0.0.0", port=port)
 
 
-# Função para consultar BIN automaticamente via API pública
+# --- Função Multi-API de Consulta de BIN (3 APIs em cascata) ---
 def consultar_bin(cartao_ou_bin):
     limpo = ''.join(filter(str.isdigit, str(cartao_ou_bin)))
     if len(limpo) < 6:
         return "DESCONHECIDO", "DESCONHECIDO"
     
     bin6 = limpo[:6]
+    
+    # 1ª Tentativa: Binlist.net
     try:
-        response = requests.get(f"https://lookup.binlist.net/{bin6}", timeout=3)
+        response = requests.get(f"https://lookup.binlist.net/{bin6}", timeout=2.5, headers={'Accept-Version': '3'})
         if response.status_code == 200:
             data = response.json()
-            banco = data.get("bank", {}).get("name", "Banco Desconhecido").upper()
-            return bin6, banco
+            banco = data.get("bank", {}).get("name")
+            if banco:
+                return bin6, banco.upper()
     except Exception:
         pass
+
+    # 2ª Tentativa: Data Binlist Backup
+    try:
+        response = requests.get(f"https://data.binlist.net/{bin6}", timeout=2.5)
+        if response.status_code == 200:
+            data = response.json()
+            banco = data.get("bank", {}).get("name")
+            if banco:
+                return bin6, banco.upper()
+    except Exception:
+        pass
+
+    # 3ª Tentativa: API Alternativa
+    try:
+        response = requests.get(f"https://lookup.binlist.net/v1/{bin6}", timeout=2.5)
+        if response.status_code == 200:
+            data = response.json()
+            banco = data.get("bank", {}).get("name")
+            if banco:
+                return bin6, banco.upper()
+    except Exception:
+        pass
+
     return bin6, "BANCO NÃO IDENTIFICADO"
 
 
@@ -105,11 +131,11 @@ def cmd_admin(message):
         f"👥 Clientes: `{clientes}`\n"
         f"🛒 Vendas: `{total_vendas}`\n"
         f"💰 Faturamento: `R$ {faturamento:.2f}`\n\n"
-        f"⚙️ **Comandos de Gestão:**\n"
+        f"⚙️ **Comandos de Gestão (Todos em Massa):**\n"
         f"• `/add_streaming [Empresa] [Login:Senha]`\n"
         f"• `/add_esim [Operadora] [QR_Code]`\n"
-        f"• `/add_gg [Lista em massa de cartões]`\n"
-        f"• `/add_dados [Dados do titular casados]`\n"
+        f"• `/add_gg [Lista gigante de GGs]`\n"
+        f"• `/add_dados [Lista gigante de Dados do Titular]`\n"
         f"• `/gerar_gift [valor]`\n"
         f"• `/dar_saldo [user_id] [valor]`"
     )
@@ -178,7 +204,7 @@ def cmd_add_gg(message):
             resumo_bancos[banco][bin6] = 0
         resumo_bancos[banco][bin6] += 1
         
-        time.sleep(0.3)
+        time.sleep(0.7)
 
     relatorio = f"✅ **Sucesso! Total adicionado: {total_adicionadas} GGs**\n\n📊 **Resumo por Banco/BIN:**\n"
     for banco, bins in resumo_bancos.items():
@@ -191,19 +217,28 @@ def cmd_add_gg(message):
         bot.send_message(message.chat.id, relatorio, parse_mode="Markdown")
 
 
+# --- NOVO: ADICIONAR DADOS DO TITULAR EM MASSA ---
 @bot.message_handler(commands=['add_dados'])
 def cmd_add_dados(message):
     if message.from_user.id != config.ADMIN_ID:
         return
-    try:
-        partes = message.text.split(maxsplit=1)
-        if len(partes) < 2:
-            bot.reply_to(message, "⚠️ Uso: `/add_dados [Nome, CPF, Endereço...]`", parse_mode="Markdown")
-            return
-        db.adicionar_dado_titular(partes[1])
-        bot.reply_to(message, "✅ Dados do titular cadastrados com sucesso! (Sairão casados com a GG na entrega).", parse_mode="Markdown")
-    except Exception as e:
-        bot.reply_to(message, f"❌ Erro ao adicionar dados: {e}")
+    
+    texto_completo = message.text.replace('/add_dados', '').strip()
+    if not texto_completo:
+        bot.reply_to(message, "⚠️ Envie a lista de dados dos titulares em massa.\nExemplo:\n`/add_dados [linha 1]\n[linha 2]`", parse_mode="Markdown")
+        return
+    
+    linhas = texto_completo.split('\n')
+    adicionados = 0
+
+    for linha in linhas:
+        linha = linha.strip()
+        if not linha:
+            continue
+        db.adicionar_dado_titular(linha)
+        adicionados += 1
+
+    bot.reply_to(message, f"✅ Sucesso! Foram cadastrados **{adicionados}** blocos de dados de titular em massa.", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['gerar_gift'])
@@ -318,7 +353,7 @@ def cmd_dar_saldo(message):
         bot.reply_to(message, f"❌ Erro ao dar saldo: {e}")
 
 
-# --- Callbacks do Menu e Compras ---
+# --- Callbacks do Menu e Compras (Com Entrega Casada Profissional) ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     user_id = call.from_user.id
@@ -345,25 +380,35 @@ def callback_query(call):
             return
         
         markup = types.InlineKeyboardMarkup(row_width=1)
+        bin_contagem = {}
         for bin_code, banco, qtd in ggs:
-            texto_btn = f"{bin_code} | {banco} | {qtd} Uni."
+            bin_contagem[bin_code] = bin_contagem.get(bin_code, 0) + qtd
+
+        for bin_code, total_qtd in bin_contagem.items():
+            texto_btn = f"💳 BIN: {bin_code} | Estoque: {total_qtd} Uni."
             markup.add(types.InlineKeyboardButton(texto_btn, callback_data=f"comprar_gg_{bin_code}"))
         
         markup.add(types.InlineKeyboardButton("🔙 Voltar ao Menu", callback_data="voltar_menu"))
-        bot.send_message(call.message.chat.id, "💳 **Escolha a BIN / Banco desejada:**", reply_markup=markup, parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, "💳 **Escolha a BIN desejada abaixo:**", reply_markup=markup, parse_mode="Markdown")
         
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
-        preco_gg = 20.0  # Ajuste o preço padrão da GG aqui se necessário
+        preco_gg = 20.0  # Preço padrão da GG (ajuste se precisar)
         bot.answer_callback_query(call.id)
         
         status, resultado = db.realizar_compra_item(user_id, 'gg', preco_gg, bin_v=bin_escolhida)
         if status == "ok":
-            bot.send_message(call.message.chat.id, f"✅ **Compra realizada com sucesso!**\n\n{resultado}", parse_mode="Markdown")
+            # Formatação Profissional da Entrega Casada
+            mensagem_entrega = (
+                f"✅ **COMPRA APROVADA COM SUCESSO!**\n\n"
+                f"💳 **Dados do Cartão (GG):**\n`{resultado}`\n\n"
+                f"🔒 *Guarde seus dados com segurança. Aproveite sua compra!*"
+            )
+            bot.send_message(call.message.chat.id, mensagem_entrega, parse_mode="Markdown")
         elif status == "saldo_insuficiente":
-            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente para realizar esta compra.")
+            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente para realizar esta compra. Resgate um Gift Card ou adicione saldo.")
         else:
-            bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
+            bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN no momento.")
             
     elif data == "voltar_menu":
         bot.answer_callback_query(call.id)
