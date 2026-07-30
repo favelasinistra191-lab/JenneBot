@@ -2313,7 +2313,13 @@
             "vendido": 0
         }
     ],
-    "admin_pendente": {},
+    "admin_pendente": {
+        "admin_id": 8776521959,
+        "tipo": "gg",
+        "bin": "250060",
+        "banco": "BANCO DO BRASIL / GERAL",
+        "bandeira": "MASTERCARD"
+    },
     "dados_titular": [
         {
             "id": 1,
