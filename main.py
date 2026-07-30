@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Definitiva - Leitor Universal de Lotes /add_gg
+Versão Definitiva com comando em texto livre (!add)
 """
 import os
 import logging
@@ -120,8 +120,8 @@ def cmd_admin(message):
         f"🛒 Vendas Realizadas: `{total_vendas}`\n"
         f"💰 Faturamento Total: `R$ {faturamento:.2f}`\n\n"
         f"⚙️ **Comandos Rápidos:**\n"
-        f"• `/add_gg [BIN]` *(Consulta apenas a 1ª e aplica em massa)*\n"
-        f"• `/add_dados` *(Lista de titulares)*\n"
+        f"• `!add [BIN]` *(Ex: !add 422061 e a lista embaixo)*\n"
+        f"• `!dados` *(Lista de titulares)*\n"
         f"• `/limpar_estoque`\n"
         f"• `/gerar_gift [valor]`\n"
         f"• `/dar_saldo [user_id] [valor]`"
@@ -129,29 +129,24 @@ def cmd_admin(message):
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
 
-# --- COMANDO /ADD_GG ROBUSTO E FLEXÍVEL ---
-@bot.message_handler(commands=['add_gg'])
-def cmd_add_gg(message):
+# --- NOVO COMANDO EM TEXTO LIVRE (!add) PARA NÃO FALHAR NUNCA ---
+@bot.message_handler(func=lambda message: message.text and message.text.lower().startswith('!add'))
+def cmd_add_gg_texto(message):
     if message.from_user.id != config.ADMIN_ID:
         bot.reply_to(message, "❌ Acesso negado.")
         return
     
-    # Pega todo o texto após o comando /add_gg
-    texto_bruto = message.text.replace('/add_gg', '', 1).strip()
+    texto_bruto = message.text[4:].strip() # Remove '!add'
     if not texto_bruto:
-        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg 422061`\n*(Cole a lista de cartões logo abaixo)*", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Uso correto:\n`!add 422061`\n*(Cole a lista de cartões logo abaixo)*", parse_mode="Markdown")
         return
     
-    # Normaliza quebras de linha independentemente de como o Telegram enviou
     linhas = texto_bruto.replace('\r\n', '\n').split('\n')
-    
-    # A primeira palavra da primeira linha deve conter a BIN ou o primeiro cartão
     primeira_linha_palavras = linhas[0].strip().split()
     if not primeira_linha_palavras:
         bot.reply_to(message, "❌ Formato inválido.", parse_mode="Markdown")
         return
 
-    # Extrai a BIN (seja informada sozinha ou direto no primeiro cartão)
     possivel_bin = "".join(filter(str.isdigit, primeira_linha_palavras[0]))
     if len(possivel_bin) >= 6:
         bin6 = possivel_bin[:6]
@@ -159,36 +154,31 @@ def cmd_add_gg(message):
         bot.reply_to(message, "❌ Informe uma BIN válida de 6 dígitos.", parse_mode="Markdown")
         return
 
-    # Coleta todos os itens válidos do lote
     cartoes_para_adicionar = []
     
-    # Se houver mais palavras na primeira linha além da BIN pura, avalia se é um cartão
     if len(primeira_linha_palavras) > 1 and '|' in primeira_linha_palavras[1]:
         cartoes_para_adicionar.append(primeira_linha_palavras[1])
         
-    # Varre o restante das linhas coletando tudo o que tiver pipe '|' (formato de cartão)
     for linha in linhas[1:]:
         linha = linha.strip()
-        if not linha or linha.startswith('/'):
+        if not linha:
             continue
         if '|' in linha:
             cartoes_para_adicionar.append(linha)
         else:
-            # Caso o usuário tenha colado cartões separados por espaço na mesma linha
             partes = linha.split()
             for p in partes:
                 if '|' in p:
                     cartoes_para_adicionar.append(p)
 
     if not cartoes_para_adicionar:
-        # Se mandou apenas a BIN, tenta pegar qualquer linha que pareça dado de cartão
         for linha in linhas[1:]:
             linha = linha.strip()
-            if len(linha) > 10 and not linha.startswith('/'):
+            if len(linha) > 10:
                 cartoes_para_adicionar.append(linha)
 
     if not cartoes_para_adicionar:
-        bot.reply_to(message, "❌ Nenhum cartão válido encontrado. Certifique-se de usar o formato `num|mes|ano|cvv`.", parse_mode="Markdown")
+        bot.reply_to(message, "❌ Nenhum cartão válido encontrado. Use o formato `num|mes|ano|cvv`.", parse_mode="Markdown")
         return
 
     # Consulta a API APENAS UMA VEZ para o lote inteiro
@@ -209,12 +199,12 @@ def cmd_add_gg(message):
     bot.reply_to(message, relatorio, parse_mode="Markdown")
 
 
-@bot.message_handler(commands=['add_dados'])
-def cmd_add_dados(message):
+@bot.message_handler(func=lambda message: message.text and message.text.lower().startswith('!dados'))
+def cmd_add_dados_texto(message):
     if message.from_user.id != config.ADMIN_ID:
         return
     
-    texto_completo = message.text.replace('/add_dados', '').strip()
+    texto_completo = message.text[6:].strip()
     if not texto_completo:
         bot.reply_to(message, "⚠️ Envie a lista de dados dos titulares logo abaixo.", parse_mode="Markdown")
         return
@@ -424,4 +414,3 @@ if __name__ == "__main__":
             LOG.error(f"Erro na conexão do bot: {e}")
             import time
             time.sleep(3)
- 
