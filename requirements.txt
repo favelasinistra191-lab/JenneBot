@@ -1,0 +1,7 @@
+pyTelegramBotAPI
+flask
+requests
+sqlalchemy
+psycopg2-binary
+python-dotenv
+cryptography
