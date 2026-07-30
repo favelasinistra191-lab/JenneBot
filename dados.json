@@ -2232,13 +2232,7 @@
             "vendido": 0
         }
     ],
-    "admin_pendente": {
-        "admin_id": 8776521959,
-        "tipo": "gg",
-        "bin": "406669",
-        "banco": "BANCO DO BRASIL / GERAL",
-        "bandeira": "VISA"
-    },
+    "admin_pendente": {},
     "dados_titular": [
         {
             "id": 1,
