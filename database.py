@@ -8,7 +8,6 @@ REPO_NAME = "favelasinistra191-lab/JenneBot"
 FILE_PATH = "dados.json"
 
 def carregar_dados():
-    """Lê todos os dados da loja (saldo, GG, jades, usuários) direto do arquivo JSON no GitHub"""
     if not GITHUB_TOKEN:
         if os.path.exists(FILE_PATH):
             with open(FILE_PATH, "r", encoding="utf-8") as f:
@@ -24,11 +23,9 @@ def carregar_dados():
         decoded_bytes = base64.b64decode(file_content)
         return json.loads(decoded_bytes.decode("utf-8"))
     else:
-        # Se o arquivo ainda não existir no GitHub, cria a estrutura inicial vazia
         return {"usuarios": [], "produtos": [], "vendas": []}
 
 def salvar_dados(dados):
-    """Salva e atualiza tudo automaticamente lá no GitHub para nunca mais sumir nada ao reiniciar"""
     if not GITHUB_TOKEN:
         with open(FILE_PATH, "w", encoding="utf-8") as f:
             json.dump(dados, f, ensure_ascii=False, indent=4)
@@ -54,7 +51,6 @@ def salvar_dados(dados):
     requests.put(url, headers=headers, json=payload)
 
 def criar_tabelas():
-    """Função inicial para garantir que o arquivo de dados existe"""
     dados = carregar_dados()
     if not dados.get("usuarios"):
         salvar_dados(dados)
