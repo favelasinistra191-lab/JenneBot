@@ -2311,6 +2311,114 @@
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
             "vendido": 0
+        },
+        {
+            "id": 256,
+            "categoria": "gg",
+            "conteudo": "2500600000861052|03/30|397",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 257,
+            "categoria": "gg",
+            "conteudo": "2500600000843340|03/30|486",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 258,
+            "categoria": "gg",
+            "conteudo": "2500600000834760|03/30|533",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 259,
+            "categoria": "gg",
+            "conteudo": "2500600000802338|03/30|570",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 260,
+            "categoria": "gg",
+            "conteudo": "2500600000855203|03/30|459",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 261,
+            "categoria": "gg",
+            "conteudo": "2500600000834372|03/30|535",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 262,
+            "categoria": "gg",
+            "conteudo": "2500600000853141|03/30|784",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 263,
+            "categoria": "gg",
+            "conteudo": "2500600000846236|03/30|106",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 264,
+            "categoria": "gg",
+            "conteudo": "2500600000881043|03/30|557",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 265,
+            "categoria": "gg",
+            "conteudo": "2500600000805125|03/30|914",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 266,
+            "categoria": "gg",
+            "conteudo": "2500600000862746|03/30|514",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
+        },
+        {
+            "id": 267,
+            "categoria": "gg",
+            "conteudo": "2500600000824407|03/30|470",
+            "bin": "250060",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "MASTERCARD",
+            "vendido": 0
         }
     ],
     "admin_pendente": {},
