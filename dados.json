@@ -2248,6 +2248,69 @@
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
             "vendido": 0
+        },
+        {
+            "id": 249,
+            "categoria": "gg",
+            "conteudo": "4919440021952114|08/31|638",
+            "bin": "491944",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 250,
+            "categoria": "gg",
+            "conteudo": "4919440021953112|08/31|749",
+            "bin": "491944",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 251,
+            "categoria": "gg",
+            "conteudo": "4919440021951116|08/31|472",
+            "bin": "491944",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 252,
+            "categoria": "gg",
+            "conteudo": "4919440021955117|08/31|753",
+            "bin": "491944",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 253,
+            "categoria": "gg",
+            "conteudo": "4919440021953112|08/31|703",
+            "bin": "491944",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 254,
+            "categoria": "gg",
+            "conteudo": "4919440021955117|08/31|764",
+            "bin": "491944",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 255,
+            "categoria": "gg",
+            "conteudo": "4919440021951736|08/31|198",
+            "bin": "491944",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
         }
     ],
     "admin_pendente": {},
