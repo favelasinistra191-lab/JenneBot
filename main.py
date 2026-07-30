@@ -1,7 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Gerenciamento completo do Bot do Telegram, Servidor Web Flask, Painel Admin,
-Adição de GGs em massa com BIN fixa, Limpeza de Estoque, Streaming, eSIM, Gifts e Entrega Casada.
+Gerenciamento profissional e otimizado do Bot de Vendas.
 """
 import os
 import logging
@@ -23,7 +22,7 @@ LOG = logging.getLogger("JenneBot")
 bot = telebot.TeleBot(config.TOKEN)
 db.criar_tabelas()
 
-# Servidor Flask para manter o bot acordado (Anti-Sleep)
+# Servidor Flask (Anti-Sleep)
 app = Flask(__name__)
 
 @app.route('/')
@@ -39,7 +38,7 @@ def run_web_server():
 def consultar_bin(bin6):
     bin6 = ''.join(filter(str.isdigit, str(bin6)))[:6]
     if len(bin6) < 6:
-        return "DESCONHECIDO", "BANCO DESCONHECIDO"
+        return "OUTRA", "BANCO DESCONHECIDO"
     
     # Identifica a Bandeira automaticamente pelos primeiros dígitos
     primeiro_digito = bin6[0]
@@ -77,24 +76,26 @@ def consultar_bin(bin6):
     return bandeira, banco
 
 
-# --- Funções de Menu ---
+# --- Menu Principal Elegante ---
 def main_menu(user_id):
     db.garantir_usuario(user_id, "", "")
     saldo = db.obter_saldo(user_id)
     
     text = (
-        f"🌟 **Bem-vindo à JenneStore** 🌟\n\n"
-        f"💳 **Seu ID:** `{user_id}`\n"
-        f"💰 **Seu Saldo:** `R$ {saldo:.2f}`\n\n"
-        f"Escolha uma das opções abaixo no menu:"
+        f"⚡ **JENNSTORE • PAINEL DIGITAL** ⚡\n"
+        f"────────────────────────\n"
+        f"👤 **ID de Acesso:** `{user_id}`\n"
+        f"💰 **Saldo Disponível:** `R$ {saldo:.2f}`\n"
+        f"────────────────────────\n"
+        f"💡 *Selecione uma das categorias abaixo para iniciar sua compra automatizada:*"
     )
     
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
-        types.InlineKeyboardButton("🛒 Comprar Streaming", callback_data="cat_streaming"),
-        types.InlineKeyboardButton("📱 Comprar eSIM", callback_data="cat_esim"),
-        types.InlineKeyboardButton("💳 Comprar GG", callback_data="menu_gg"),
-        types.InlineKeyboardButton("👤 Meu Perfil / Saldo", callback_data="perfil"),
+        types.InlineKeyboardButton("🛒 Streaming", callback_data="cat_streaming"),
+        types.InlineKeyboardButton("📱 eSIM Global", callback_data="cat_esim"),
+        types.InlineKeyboardButton("💳 Comprar GGs", callback_data="menu_gg"),
+        types.InlineKeyboardButton("👤 Meu Perfil", callback_data="perfil"),
         types.InlineKeyboardButton("🎁 Resgatar Gift", callback_data="info_gift"),
         types.InlineKeyboardButton("📞 Suporte", callback_data="suporte")
     )
@@ -116,23 +117,21 @@ def cmd_start(message):
 @bot.message_handler(commands=['admin', 'painel'])
 def cmd_admin(message):
     if message.from_user.id != config.ADMIN_ID:
-        bot.reply_to(message, "❌ Você não tem permissão para acessar o painel administrativo.")
+        bot.reply_to(message, "❌ Acesso negado.")
         return
     
     total_vendas, faturamento, clientes = db.obter_dados_relatorio()
     
     texto = (
-        f"👑 **Painel do Dono - JenneStore**\n\n"
-        f"📊 **Estatísticas:**\n"
+        f"👑 **Painel Administrativo • JenneStore**\n\n"
+        f"📊 **Métricas Atuais:**\n"
         f"👥 Clientes: `{clientes}`\n"
-        f"🛒 Vendas: `{total_vendas}`\n"
-        f"💰 Faturamento: `R$ {faturamento:.2f}`\n\n"
-        f"⚙️ **Comandos de Gestão:**\n"
-        f"• `/add_streaming [Empresa] [Login:Senha]`\n"
-        f"• `/add_esim [Operadora] [QR_Code]`\n"
-        f"• `/add_gg [BIN]` (Cole a lista na mesma mensagem)\n"
-        f"• `/add_dados` (Cole a lista de dados dos titulares em massa)\n"
-        f"• `/limpar_estoque` (Zera GGs e Dados de Teste)\n"
+        f"🛒 Vendas Realizadas: `{total_vendas}`\n"
+        f"💰 Faturamento Total: `R$ {faturamento:.2f}`\n\n"
+        f"⚙️ **Comandos Rápidos:**\n"
+        f"• `/add_gg [BIN]` *(Cole a lista logo abaixo)*\n"
+        f"• `/add_dados` *(Cole a lista de titulares em massa)*\n"
+        f"• `/limpar_estoque` *(Zera itens não vendidos)*\n"
         f"• `/gerar_gift [valor]`\n"
         f"• `/dar_saldo [user_id] [valor]`"
     )
@@ -151,7 +150,7 @@ def cmd_add_streaming(message):
         db.adicionar_estoque_item(categoria='streaming', sub_tipo=partes[1].upper(), conteudo=partes[2])
         bot.reply_to(message, f"✅ Streaming `{partes[1].upper()}` adicionado com sucesso!", parse_mode="Markdown")
     except Exception as e:
-        bot.reply_to(message, f"❌ Erro ao adicionar streaming: {e}")
+        bot.reply_to(message, f"❌ Erro: {e}")
 
 
 @bot.message_handler(commands=['add_esim'])
@@ -161,15 +160,15 @@ def cmd_add_esim(message):
     try:
         partes = message.text.split(maxsplit=2)
         if len(partes) < 3:
-            bot.reply_to(message, "⚠️ Uso: `/add_esim [Operadora] [QR_Code_ou_Link]`", parse_mode="Markdown")
+            bot.reply_to(message, "⚠️ Uso: `/add_esim [Operadora] [QR_Code]`", parse_mode="Markdown")
             return
         db.adicionar_estoque_item(categoria='esim', sub_tipo=partes[1].upper(), conteudo=partes[2])
-        bot.reply_to(message, f"✅ eSIM da operadora `{partes[1].upper()}` adicionado!", parse_mode="Markdown")
+        bot.reply_to(message, f"✅ eSIM `{partes[1].upper()}` adicionado com sucesso!", parse_mode="Markdown")
     except Exception as e:
-        bot.reply_to(message, f"❌ Erro ao adicionar eSIM: {e}")
+        bot.reply_to(message, f"❌ Erro: {e}")
 
 
-# --- COMANDO /ADD_GG OTIMIZADO COM BIN FIXA ---
+# --- COMANDO /ADD_GG COM BIN FIXA E CONSULTA ÚNICA ---
 @bot.message_handler(commands=['add_gg'])
 def cmd_add_gg(message):
     if message.from_user.id != config.ADMIN_ID:
@@ -177,7 +176,7 @@ def cmd_add_gg(message):
     
     texto_original = message.text.replace('/add_gg', '').strip()
     if not texto_original:
-        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg [BIN]`\nCole a lista de GGs logo abaixo na mesma mensagem.\nExemplo:\n`/add_gg 422061`\n`num|mes|ano|cvv`", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg 422061`\n*(Cole a lista de cartões logo abaixo na mesma mensagem)*", parse_mode="Markdown")
         return
     
     linhas = texto_original.split('\n')
@@ -185,7 +184,7 @@ def cmd_add_gg(message):
     bin_informada = "".join(filter(str.isdigit, primeira_linha_args[0])) if primeira_linha_args else ""
     
     if len(bin_informada) < 6:
-        bot.reply_to(message, "❌ Informe uma BIN válida de 6 dígitos logo após o comando (Ex: `/add_gg 422061`).", parse_mode="Markdown")
+        bot.reply_to(message, "❌ Informe uma BIN válida de 6 dígitos (Ex: `/add_gg 422061`).", parse_mode="Markdown")
         return
     
     bin6 = bin_informada[:6]
@@ -212,7 +211,7 @@ def cmd_add_gg(message):
         return
 
     relatorio = (
-        f"✅ **Lote de GGs Adicionado com Sucesso!**\n\n"
+        f"✅ **Lote Adicionado com Sucesso!**\n\n"
         f"💳 **BIN:** `{bin6}`\n"
         f"🏷️ **Bandeira:** `{bandeira}`\n"
         f"🏦 **Banco:** `{banco}`\n"
@@ -248,7 +247,6 @@ def cmd_add_dados(message):
     bot.reply_to(message, f"✅ Sucesso! Cadastrados **{adicionados}** blocos de dados de titular em massa.", parse_mode="Markdown")
 
 
-# --- NOVO: COMANDO PARA LIMPAR ESTOQUE DE TESTE ---
 @bot.message_handler(commands=['limpar_estoque'])
 def cmd_limpar_estoque(message):
     if message.from_user.id != config.ADMIN_ID:
@@ -256,14 +254,13 @@ def cmd_limpar_estoque(message):
     
     session = db.SessionLocal()
     try:
-        # Apaga todos os itens de estoque não vendidos (GGs, Streaming, eSIM) e Dados de Titular
         session.execute(db.text("DELETE FROM estoque WHERE vendido = 0"))
         session.execute(db.text("DELETE FROM dados_titular WHERE usado = 0"))
         session.commit()
-        bot.reply_to(message, "🧹 **Estoque limpo com sucesso!** Todos os cartões e dados de teste não vendidos foram removidos da base.", parse_mode="Markdown")
+        bot.reply_to(message, "🧹 **Estoque limpo com sucesso!** Prateleiras zeradas e prontas para novos cadastros.", parse_mode="Markdown")
     except Exception as e:
         session.rollback()
-        bot.reply_to(message, f"❌ Erro ao limpar o estoque: {e}")
+        bot.reply_to(message, f"❌ Erro ao limpar estoque: {e}")
     finally:
         session.close()
 
@@ -326,7 +323,7 @@ def cmd_resgatar(message):
 
         user.saldo += gift.valor
         session.commit()
-        bot.reply_to(message, f"🎉 **Resgate com sucesso!** Adicionado R$ {gift.valor:.2f} ao seu saldo.", parse_mode="Markdown")
+        bot.reply_to(message, f"🎉 **Resgate efetuado com sucesso!** Adicionado R$ {gift.valor:.2f} ao seu saldo.", parse_mode="Markdown")
     except Exception as e:
         session.rollback()
         bot.reply_to(message, f"❌ Erro: {e}")
@@ -356,7 +353,7 @@ def cmd_dar_saldo(message):
         bot.reply_to(message, f"❌ Erro: {e}")
 
 
-# --- Callbacks e Compra com Entrega Casada Profissional ---
+# --- Callbacks e Compra com Entrega Profissional Casada ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     user_id = call.from_user.id
@@ -365,21 +362,21 @@ def callback_query(call):
     if data == "perfil":
         saldo = db.obter_saldo(user_id)
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, f"👤 **Seu Perfil**\nID: `{user_id}`\nSaldo: `R$ {saldo:.2f}`", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, f"👤 **Painel de Perfil**\n\n• ID: `{user_id}`\n• Saldo Atual: `R$ {saldo:.2f}`", parse_mode="Markdown")
         
     elif data == "suporte":
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "📞 Para suporte, entre em contato com o administrador.", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, "📞 Para suporte, atendimento ou dúvidas, entre em contato com o administrador.", parse_mode="Markdown")
         
     elif data == "info_gift":
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "🎁 Para resgatar, envie: `/resgatar [codigo]`", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, "🎁 Para adicionar saldo, envie o comando:\n`/resgatar [seu_codigo]`", parse_mode="Markdown")
         
     elif data == "menu_gg":
         bot.answer_callback_query(call.id)
         ggs = db.listar_estoque_gg_agrupado()
         if not ggs:
-            bot.send_message(call.message.chat.id, "❌ Não há GGs disponíveis no momento.")
+            bot.send_message(call.message.chat.id, "❌ Não há GGs disponíveis no momento. Volte mais tarde!")
             return
         
         markup = types.InlineKeyboardMarkup(row_width=1)
@@ -389,11 +386,11 @@ def callback_query(call):
             bin_contagem[chave] = bin_contagem.get(chave, 0) + qtd
 
         for (bin_code, banco, bandeira), total_qtd in bin_contagem.items():
-            texto_btn = f"💳 {bandeira} | {banco} ({bin_code}) - Estoque: {total_qtd}"
+            texto_btn = f"💳 {bandeira} | {banco} ({bin_code}) • Estoque: {total_qtd}"
             markup.add(types.InlineKeyboardButton(texto_btn, callback_data=f"comprar_gg_{bin_code}"))
         
         markup.add(types.InlineKeyboardButton("🔙 Voltar ao Menu", callback_data="voltar_menu"))
-        bot.send_message(call.message.chat.id, "💳 **Escolha a BIN / Banco desejado abaixo:**", reply_markup=markup, parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, "💳 **Selecione a Opção / BIN Desejada:**", reply_markup=markup, parse_mode="Markdown")
         
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
@@ -403,26 +400,27 @@ def callback_query(call):
         status, resultado_gg, resultado_dados, banco_item, bandeira_item = db.realizar_compra_item_casado(user_id, 'gg', preco_gg, bin_v=bin_escolhida)
         
         if status == "ok":
+            # LAYOUT DE ENTREGA PROFISSIONAL E ELEGANTE
             mensagem_entrega = (
-                f"✅ **COMPRA APROVADA COM SUCESSO!**\n\n"
+                f"✅ **PEDIDO APROVADO COM SUCESSO!**\n\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"💳 **DADOS DO CARTÃO (GG)**\n"
-                f"• **Número / Val / CVV:** `{resultado_gg}`\n"
+                f"💳 **DADOS DO CARTÃO**\n"
+                f"• **Info (Num|Val|CVV):** `{resultado_gg}`\n"
                 f"• **Bandeira:** `{bandeira_item}`\n"
                 f"• **Banco:** `{banco_item}`\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"👤 **DADOS DO TITULAR**\n"
                 f"`{resultado_dados}`\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"🔒 *Guarde seus dados com segurança. Bom proveito!*"
+                f"🔒 *Guarde suas informações com segurança. Obrigado pela preferência!*"
             )
             bot.send_message(call.message.chat.id, mensagem_entrega, parse_mode="Markdown")
         elif status == "saldo_insuficiente":
-            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente para realizar esta compra.")
+            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente. Resgate um Gift Card ou adicione saldo para prosseguir.")
         elif status == "falta_dados":
-            bot.send_message(call.message.chat.id, "⚠️ Compra aprovada para a GG, mas os dados do titular em massa acabaram. Avise o admin para abastecer o `/add_dados`!")
+            bot.send_message(call.message.chat.id, "⚠️ Compra aprovada, mas os dados de titular em massa esgotaram. Avise o suporte/admin!")
         else:
-            bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN no momento.")
+            bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta opção no momento.")
             
     elif data == "voltar_menu":
         bot.answer_callback_query(call.id)
