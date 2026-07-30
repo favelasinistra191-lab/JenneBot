@@ -8,11 +8,22 @@ REPO_NAME = "favelasinistra191-lab/JenneBot"
 FILE_PATH = "dados.json"
 
 def carregar_dados():
+    estrutura_padrao = {
+        "usuarios": [], 
+        "estoque": [], 
+        "gift_cards": [], 
+        "dados_titular": [],
+        "admin_pendente": {}
+    }
+    
     if not GITHUB_TOKEN:
         if os.path.exists(FILE_PATH):
             with open(FILE_PATH, "r", encoding="utf-8") as f:
-                return json.load(f)
-        return {"usuarios": [], "estoque": [], "gift_cards": [], "dados_titular": []}
+                dados = json.load(f)
+                if "admin_pendente" not in dados:
+                    dados["admin_pendente"] = {}
+                return dados
+        return estrutura_padrao
 
     url = f"https://api.github.com/repos/{REPO_NAME}/contents/{FILE_PATH}"
     headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
@@ -21,9 +32,12 @@ def carregar_dados():
     if response.status_code == 200:
         file_content = response.json().get("content")
         decoded_bytes = base64.b64decode(file_content)
-        return json.loads(decoded_bytes.decode("utf-8"))
+        dados = json.loads(decoded_bytes.decode("utf-8"))
+        if "admin_pendente" not in dados:
+            dados["admin_pendente"] = {}
+        return dados
     else:
-        return {"usuarios": [], "estoque": [], "gift_cards": [], "dados_titular": []}
+        return estrutura_padrao
 
 def salvar_dados(dados):
     if not GITHUB_TOKEN:
