@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Ultra-Flexível Definitiva para /add_gg
+Versão Passo a Passo (2 Etapas) + Agrupamento Automático de Estoque
 """
 import os
 import logging
@@ -21,6 +21,10 @@ LOG = logging.getLogger("JenneBot")
 # Inicialização do Bot e Banco
 bot = telebot.TeleBot(config.TOKEN, threaded=True)
 db.criar_tabelas()
+
+# Dicionário temporário para guardar o estado do Admin (Armazena a BIN aguardando a lista)
+# Formato: { admin_id: "422061" }
+ADMIN_ESTADO_BIN = {}
 
 # Servidor Flask (Anti-Sleep)
 app = Flask(__name__)
@@ -120,7 +124,7 @@ def cmd_admin(message):
         f"🛒 Vendas Realizadas: `{total_vendas}`\n"
         f"💰 Faturamento Total: `R$ {faturamento:.2f}`\n\n"
         f"⚙️ **Comandos Rápidos:**\n"
-        f"• `/add_gg [BIN]` *(Ex: /add_gg 422061 e a lista embaixo)*\n"
+        f"• `/add_gg [BIN]` *(Etapa 1: Informa a BIN)*\n"
         f"• `/add_dados` *(Lista de titulares)*\n"
         f"• `/limpar_estoque`\n"
         f"• `/gerar_gift [valor]`\n"
@@ -129,53 +133,63 @@ def cmd_admin(message):
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
 
-# --- COMANDO /ADD_GG BLINDADO ---
+# --- ETAPA 1: O Admin envia /add_gg 422061 ---
 @bot.message_handler(commands=['add_gg'])
-def cmd_add_gg(message):
+def cmd_add_gg_etapa1(message):
     if message.from_user.id != config.ADMIN_ID:
         bot.reply_to(message, "❌ Acesso negado.")
         return
     
-    texto_bruto = message.text.replace('/add_gg', '', 1).strip()
-    if not texto_bruto:
-        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg 422061`\n*(Cole a lista de cartões logo abaixo)*", parse_mode="Markdown")
+    args = message.text.replace('/add_gg', '').strip()
+    bin6 = "".join(filter(str.isdigit, args))[:6]
+    
+    if len(bin6) < 6:
+        bot.reply_to(message, "⚠️ Use o formato correto:\n`/add_gg 422061`", parse_mode="Markdown")
         return
     
-    # Separa todas as linhas do texto enviado
+    # Consulta a API na hora para mostrar os dados e salvar no estado
+    bandeira, banco = consultar_bin(bin6)
+    ADMIN_ESTADO_BIN[message.from_user.id] = bin6
+
+    texto_resposta = (
+        f"🔍 **BIN Identificada com Sucesso!**\n\n"
+        f"💳 **BIN:** `{bin6}`\n"
+        f"🏷️ **Bandeira:** `{bandeira}`\n"
+        f"🏦 **Banco:** `{banco}`\n\n"
+        f"✅ **Agora mande a lista de cartões correspondente a esta BIN** (pode mandar em mensagens separadas ou juntas, eu vou somar tudo no estoque automaticamente)."
+    )
+    bot.reply_to(message, texto_resposta, parse_mode="Markdown")
+
+
+# --- ETAPA 2: O Admin envia apenas a lista de cartões (ouvindo o estado salvo) ---
+@bot.message_handler(func=lambda message: message.from_user.id in ADMIN_ESTADO_BIN and not message.text.startswith('/'))
+def cmd_add_gg_etapa2(message):
+    admin_id = message.from_user.id
+    bin6 = ADMIN_ESTADO_BIN[admin_id]
+    
+    texto_bruto = message.text.strip()
     linhas = texto_bruto.replace('\r\n', '\n').split('\n')
     
-    # Procura a BIN (pega os primeiros 6 números válidos que aparecerem no texto)
-    todos_digitos = "".join(filter(str.isdigit, texto_bruto))
-    if len(todos_digitos) < 6:
-        bot.reply_to(message, "❌ Nenhuma BIN válida encontrada.", parse_mode="Markdown")
-        return
-        
-    bin6 = todos_digitos[:6]
-
-    # Varre o texto recolhendo tudo o que tiver pipe '|' (formato de cartão)
     cartoes_para_adicionar = []
     for linha in linhas:
         linha = linha.strip()
-        if not linha or linha.startswith('/'):
+        if not linha:
             continue
-            
-        # Divide caso venha mais de um cartão na mesma linha por espaço
         for parte in linha.split():
             if '|' in parte:
                 cartoes_para_adicionar.append(parte.strip())
 
-    # Se não achou com pipe, pega qualquer linha longa que pareça cartão
     if not cartoes_para_adicionar:
         for linha in linhas:
             linha = linha.strip()
-            if len(linha) > 10 and not linha.startswith('/'):
+            if len(linha) > 10:
                 cartoes_para_adicionar.append(linha)
 
     if not cartoes_para_adicionar:
-        bot.reply_to(message, "❌ Nenhum cartão válido encontrado. Use o formato `num|mes|ano|cvv`.", parse_mode="Markdown")
+        bot.reply_to(message, "❌ Nenhum cartão válido encontrado. Certifique-se de mandar no formato `num|mes|ano|cvv`.")
         return
 
-    # Consulta a API APENAS UMA VEZ para o lote inteiro
+    # Consulta novamente a bandeira/banco para garantir os dados corretos ao inserir
     bandeira, banco = consultar_bin(bin6)
 
     adicionados = 0
@@ -183,14 +197,17 @@ def cmd_add_gg(message):
         db.adicionar_estoque_item(categoria='gg', conteudo=item, bin=bin6, banco=banco, bandeira=bandeira)
         adicionados += 1
 
-    relatorio = (
-        f"✅ **Lote Adicionado com Sucesso!**\n\n"
+    # Remove o estado para finalizar o processo (ou mantém se quiser mandar mais listas para a mesma BIN, mas limpar evita conflitos)
+    del ADMIN_ESTADO_BIN[admin_id]
+
+    bot.reply_to(
+        message, 
+        f"✅ **Adicionado com Sucesso!**\n\n"
         f"💳 **BIN:** `{bin6}`\n"
-        f"🏷️ **Bandeira:** `{bandeira}`\n"
-        f"🏦 **Banco:** `{banco}`\n"
-        f"📦 **Quantidade:** `+{adicionados} Uni.`"
+        f"📦 **Quantidade Adicionada:** `+{adicionados} Uni.`\n"
+        f"🔄 *O estoque foi atualizado e somado automaticamente no menu de compras!*", 
+        parse_mode="Markdown"
     )
-    bot.reply_to(message, relatorio, parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['add_dados'])
