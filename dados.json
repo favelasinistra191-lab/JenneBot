@@ -2230,6 +2230,24 @@
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
             "vendido": 0
+        },
+        {
+            "id": 247,
+            "categoria": "gg",
+            "conteudo": "4066699982420483|01|2034|111",
+            "bin": "406669",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 248,
+            "categoria": "gg",
+            "conteudo": "4066699982436836|01|2034|200",
+            "bin": "406669",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
         }
     ],
     "admin_pendente": {},
