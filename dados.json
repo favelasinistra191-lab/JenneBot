@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 138.0
+            "saldo": 134.0
         },
         {
             "user_id": 7162864988,
@@ -35,7 +35,7 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 2,
@@ -3410,7 +3410,7 @@
         {
             "id": 4,
             "conteudo": "GABRIELLY ELZA DA ROCHA|663.001.703-06",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 5,
