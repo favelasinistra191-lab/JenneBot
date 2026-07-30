@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Definitiva Completa: 2 Etapas (GG e Streaming) + eSIM Direto + Painel Blindado
+Versão Definitiva Completa: Preços Ajustados + Recibo Profissional + Gift com Link
 """
 import os
 import logging
@@ -79,9 +79,9 @@ def main_menu(user_id):
     
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
-        types.InlineKeyboardButton("🛒 Streaming", callback_data="cat_streaming"),
-        types.InlineKeyboardButton("📱 eSIM Global", callback_data="cat_esim"),
-        types.InlineKeyboardButton("💳 Comprar GGs", callback_data="menu_gg"),
+        types.InlineKeyboardButton("🛒 Streaming (R$ 12.00)", callback_data="cat_streaming"),
+        types.InlineKeyboardButton("📱 eSIM Global (R$ 20.00)", callback_data="cat_esim"),
+        types.InlineKeyboardButton("💳 Comprar GGs (R$ 4.00)", callback_data="menu_gg"),
         types.InlineKeyboardButton("👤 Meu Perfil", callback_data="perfil"),
         types.InlineKeyboardButton("🎁 Resgatar Gift", callback_data="info_gift"),
         types.InlineKeyboardButton("📞 Suporte", callback_data="suporte")
@@ -108,13 +108,13 @@ def cmd_admin(message):
     total_vendas, faturamento, clientes = db.obter_dados_relatorio()
     texto = (
         f"👑 **Painel Administrativo • JenneStore**\n\n"
-        f"📊 Clientes: `{clientes}` | Vendas: `{total_vendas}` | Faturamento: `R$ {faturamento:.2f}`\n\n"
-        f"⚙️ **Comandos de Abastecimento (2 Etapas):**\n"
-        f"• `/add_gg [BIN]` (Ex: `/add_gg 422061`)\n"
-        f"• `/add_streaming [Nome]` (Ex: `/add_streaming NETFLIX`)\n\n"
-        f"⚙️ **Comandos Diretos:**\n"
-        f"• `/add_esim [codigo]`\n"
-        f"• `/add_dados [lista]` (Titulares em massa)\n"
+        f"📊 Clientes: `{clientes}` | Vendas: `{total_vendas}`\n\n"
+        f"⚙️ **Abastecimento (2 Etapas):**\n"
+        f"• `/add_gg [BIN]` (R$ 4,00)\n"
+        f"• `/add_streaming [Nome]` (R$ 12,00)\n\n"
+        f"⚙️ **Diretos:**\n"
+        f"• `/add_esim [codigo]` (R$ 20,00)\n"
+        f"• `/add_dados [lista]` (Titulares)\n"
         f"• `/limpar_estoque`\n"
         f"• `/gerar_gift [valor]`"
     )
@@ -174,7 +174,7 @@ def cmd_add_streaming_etapa1(message):
     bot.reply_to(
         message, 
         f"🎬 **Streaming Configurado: `{nome_streaming}`**\n\n"
-        f"👇 **AGORA MANDE APENAS A LISTA DE CONTAS** (uma por linha ou juntas, cole direto abaixo).", 
+        f"👇 **AGORA MANDE APENAS A LISTA DE CONTAS** (cole direto abaixo).", 
         parse_mode="Markdown"
     )
 
@@ -238,7 +238,7 @@ def processar_etapa2(message):
         bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n🎬 **Streaming:** `{nome_streaming}`\n📦 **Adicionadas:** `+{adicionados} Contas`", parse_mode="Markdown")
 
 
-# --- OUTROS COMANDOS DIRETOS (DADOS E ESIM) ---
+# --- OUTROS COMANDOS DIRETOS ---
 @bot.message_handler(commands=['add_dados'])
 def cmd_add_dados(message):
     if message.from_user.id != config.ADMIN_ID:
@@ -299,13 +299,30 @@ def cmd_gerar_gift(message):
     except ValueError:
         bot.reply_to(message, "❌ Valor inválido.", parse_mode="Markdown")
         return
+    
     codigo_gift = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
     session = db.SessionLocal()
     try:
         from sqlalchemy import text
         session.execute(text("INSERT INTO gift_cards (codigo, valor, usado) VALUES (:c, :v, 0)"), {"c": codigo_gift, "v": valor})
         session.commit()
-        bot.reply_to(message, f"🎁 **Gift Gerado!**\nValor: R$ {valor:.2f}\nCódigo: `{codigo_gift}`", parse_mode="Markdown")
+        
+        # Resposta detalhada e explicativa para facilitar cópia e envio ao cliente
+        bot_username = bot.get_me().username
+        mensagem_formatada = (
+            f"🎁 **Gift Card Gerado com Sucesso!**\n\n"
+            f"💵 **Valor:** `R$ {valor:.2f}`\n"
+            f"🔑 **Código:** `{codigo_gift}`\n\n"
+            f"📋 **Texto pronto para enviar ao cliente:**\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"🎁 Resgate seu Gift Card de **R$ {valor:.2f}** na JenneStore!\n"
+            f"Clique no link abaixo para entrar no bot e resgatar:\n"
+            f"👉 https://t.me/{bot_username}\n\n"
+            f"Basta enviar o comando abaixo:\n"
+            f"`/resgatar {codigo_gift}`\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━"
+        )
+        bot.reply_to(message, mensagem_formatada, parse_mode="Markdown")
     except Exception as e:
         session.rollback()
         bot.reply_to(message, f"❌ Erro: {e}")
@@ -357,7 +374,7 @@ def callback_query(call):
         
     elif data == "info_gift":
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "🎁 Para adicionar saldo, envie:\n`/resgatar [seu_codigo]`", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, "🎁 Para adicionar saldo com um Gift Card, envie:\n`/resgatar [seu_codigo]`", parse_mode="Markdown")
         
     elif data == "cat_streaming":
         bot.answer_callback_query(call.id)
@@ -373,15 +390,15 @@ def callback_query(call):
             
         markup = types.InlineKeyboardMarkup(row_width=1)
         for nome_streaming, total_qtd in rows:
-            markup.add(types.InlineKeyboardButton(f"🎬 {nome_streaming} • Estoque: {total_qtd}", callback_data=f"comprar_stream_{nome_streaming}"))
+            markup.add(types.InlineKeyboardButton(f"🎬 {nome_streaming} • Estoque: {total_qtd} (R$ 12,00)", callback_data=f"comprar_stream_{nome_streaming}"))
         markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
-        bot.send_message(call.message.chat.id, "🛒 **Selecione a Streaming Desejada:**", reply_markup=markup, parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, "🛒 **Selecione o Streaming Desejado:**", reply_markup=markup, parse_mode="Markdown")
 
     elif data.startswith("comprar_stream_"):
         nome_streaming = data.replace("comprar_stream_", "")
         bot.answer_callback_query(call.id)
         
-        preco = 15.0
+        preco = 12.0
         conn = db.sqlite3.connect(db.DB_NAME)
         cursor = conn.cursor()
         cursor.execute("SELECT saldo FROM usuarios WHERE user_id = ?", (user_id,))
@@ -404,7 +421,7 @@ def callback_query(call):
         conn.commit()
         conn.close()
         
-        bot.send_message(call.message.chat.id, f"✅ **COMPRA APROVADA!**\n\n🎬 **Serviço:** `{nome_streaming}`\n🔑 **Conta:** `{conteudo_conta}`", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, f"✅ **COMPRA APROVADA!**\n\n🎬 **Serviço:** `{nome_streaming}`\n🔑 **Conta:** `{conteudo_conta}`\n⏱️ *Você tem 10 minutos para reportar caso haja problemas.*", parse_mode="Markdown")
 
     elif data == "cat_esim":
         bot.answer_callback_query(call.id)
@@ -418,7 +435,7 @@ def callback_query(call):
             return
         markup = types.InlineKeyboardMarkup(row_width=1)
         for item_id, in rows:
-            markup.add(types.InlineKeyboardButton(f"📱 Comprar eSIM Global (R$ 30.00)", callback_data=f"compras_esim_{item_id}"))
+            markup.add(types.InlineKeyboardButton(f"📱 Comprar eSIM Global • R$ 20.00", callback_data=f"compras_esim_{item_id}"))
         markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
         bot.send_message(call.message.chat.id, "📱 **eSIM Globais Disponíveis:**", reply_markup=markup, parse_mode="Markdown")
 
@@ -429,7 +446,7 @@ def callback_query(call):
         cursor = conn.cursor()
         cursor.execute("SELECT saldo FROM usuarios WHERE user_id = ?", (user_id,))
         saldo = cursor.fetchone()[0]
-        preco = 30.0
+        preco = 20.0
         if saldo < preco:
             bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
             conn.close()
@@ -444,7 +461,7 @@ def callback_query(call):
         cursor.execute("UPDATE estoque SET vendido = 1 WHERE id = ?", (item_id,))
         conn.commit()
         conn.close()
-        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido!**\n\nDados: `{item[0]}`", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido com Sucesso!**\n\n📱 **Dados de Ativação:**\n`{item[0]}`\n⏱️ *Você tem 10 minutos para troca em caso de problemas.*", parse_mode="Markdown")
 
     elif data == "menu_gg":
         bot.answer_callback_query(call.id)
@@ -455,7 +472,7 @@ def callback_query(call):
         
         markup = types.InlineKeyboardMarkup(row_width=1)
         for bin_code, bandeira, total_qtd in ggs:
-            texto_btn = f"💳 {bandeira} ({bin_code}) • Estoque: {total_qtd}"
+            texto_btn = f"💳 {bandeira} ({bin_code}) • Estoque: {total_qtd} (R$ 4,00)"
             markup.add(types.InlineKeyboardButton(texto_btn, callback_data=f"comprar_gg_{bin_code}"))
         
         markup.add(types.InlineKeyboardButton("🔙 Voltar ao Menu", callback_data="voltar_menu"))
@@ -465,21 +482,29 @@ def callback_query(call):
         bin_escolhida = data.split("_")[2]
         bot.answer_callback_query(call.id)
         
-        status, res_gg, res_dados, banco_item, bandeira_item = db.realizar_compra_item_casado(user_id, 'gg', 20.0, bin_v=bin_escolhida)
+        # Preço da GG ajustado para R$ 4,00
+        status, res_gg, res_dados, banco_item, bandeira_item = db.realizar_compra_item_casado(user_id, 'gg', 4.0, bin_v=bin_escolhida)
         
         if status == "ok":
+            # Recibo detalhado, elegante, profissional e bem organizado
             msg = (
-                f"✅ **PEDIDO APROVADO!**\n\n"
-                f"💳 **CARTÃO:** `{res_gg}`\n"
-                f"🏷️ **Bandeira:** `{bandeira_item}`\n"
+                f"✅ **PEDIDO APROVADO COM SUCESSO!**\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"👤 **TITULAR:**\n`{res_dados}`"
+                f"💳 **DADOS DO CARTÃO:**\n"
+                f"• Número/Info: `{res_gg}`\n"
+                f"• Bandeira: `{bandeira_item}`\n"
+                f"• Banco: `{banco_item}`\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"👤 **DADOS DO TITULAR:**\n"
+                f"• Cadastro: `{res_dados}`\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"⏱️ **Garantia / Troca:** Você tem **10 minutos** para conferir e solicitar troca caso o item esteja inválido."
             )
             bot.send_message(call.message.chat.id, msg, parse_mode="Markdown")
         elif status == "saldo_insuficiente":
             bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
         elif status == "falta_dados":
-            bot.send_message(call.message.chat.id, "⚠️ Estoque de dados de titular esgotado.")
+            bot.send_message(call.message.chat.id, "⚠️ Estoque temporariamente sem dados de titular casados.")
         else:
             bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
             
