@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Definitiva com comando em texto livre (!add)
+Versão Ultra-Flexível Definitiva para /add_gg
 """
 import os
 import logging
@@ -34,7 +34,7 @@ def run_web_server():
     app.run(host="0.0.0.0", port=port)
 
 
-# --- Função Otimizada: Consulta a BIN APENAS 1 VEZ por Lote ---
+# --- Consulta a BIN ---
 def consultar_bin(bin6):
     bin6 = ''.join(filter(str.isdigit, str(bin6)))[:6]
     if len(bin6) < 6:
@@ -66,7 +66,7 @@ def consultar_bin(bin6):
     return bandeira, banco
 
 
-# --- Menu Principal Elegante ---
+# --- Menu Principal ---
 def main_menu(user_id):
     db.garantir_usuario(user_id, "", "")
     saldo = db.obter_saldo(user_id)
@@ -120,8 +120,8 @@ def cmd_admin(message):
         f"🛒 Vendas Realizadas: `{total_vendas}`\n"
         f"💰 Faturamento Total: `R$ {faturamento:.2f}`\n\n"
         f"⚙️ **Comandos Rápidos:**\n"
-        f"• `!add [BIN]` *(Ex: !add 422061 e a lista embaixo)*\n"
-        f"• `!dados` *(Lista de titulares)*\n"
+        f"• `/add_gg [BIN]` *(Ex: /add_gg 422061 e a lista embaixo)*\n"
+        f"• `/add_dados` *(Lista de titulares)*\n"
         f"• `/limpar_estoque`\n"
         f"• `/gerar_gift [valor]`\n"
         f"• `/dar_saldo [user_id] [valor]`"
@@ -129,52 +129,46 @@ def cmd_admin(message):
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
 
-# --- NOVO COMANDO EM TEXTO LIVRE (!add) PARA NÃO FALHAR NUNCA ---
-@bot.message_handler(func=lambda message: message.text and message.text.lower().startswith('!add'))
-def cmd_add_gg_texto(message):
+# --- COMANDO /ADD_GG BLINDADO ---
+@bot.message_handler(commands=['add_gg'])
+def cmd_add_gg(message):
     if message.from_user.id != config.ADMIN_ID:
         bot.reply_to(message, "❌ Acesso negado.")
         return
     
-    texto_bruto = message.text[4:].strip() # Remove '!add'
+    texto_bruto = message.text.replace('/add_gg', '', 1).strip()
     if not texto_bruto:
-        bot.reply_to(message, "⚠️ Uso correto:\n`!add 422061`\n*(Cole a lista de cartões logo abaixo)*", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg 422061`\n*(Cole a lista de cartões logo abaixo)*", parse_mode="Markdown")
         return
     
+    # Separa todas as linhas do texto enviado
     linhas = texto_bruto.replace('\r\n', '\n').split('\n')
-    primeira_linha_palavras = linhas[0].strip().split()
-    if not primeira_linha_palavras:
-        bot.reply_to(message, "❌ Formato inválido.", parse_mode="Markdown")
-        return
-
-    possivel_bin = "".join(filter(str.isdigit, primeira_linha_palavras[0]))
-    if len(possivel_bin) >= 6:
-        bin6 = possivel_bin[:6]
-    else:
-        bot.reply_to(message, "❌ Informe uma BIN válida de 6 dígitos.", parse_mode="Markdown")
-        return
-
-    cartoes_para_adicionar = []
     
-    if len(primeira_linha_palavras) > 1 and '|' in primeira_linha_palavras[1]:
-        cartoes_para_adicionar.append(primeira_linha_palavras[1])
+    # Procura a BIN (pega os primeiros 6 números válidos que aparecerem no texto)
+    todos_digitos = "".join(filter(str.isdigit, texto_bruto))
+    if len(todos_digitos) < 6:
+        bot.reply_to(message, "❌ Nenhuma BIN válida encontrada.", parse_mode="Markdown")
+        return
         
-    for linha in linhas[1:]:
-        linha = linha.strip()
-        if not linha:
-            continue
-        if '|' in linha:
-            cartoes_para_adicionar.append(linha)
-        else:
-            partes = linha.split()
-            for p in partes:
-                if '|' in p:
-                    cartoes_para_adicionar.append(p)
+    bin6 = todos_digitos[:6]
 
+    # Varre o texto recolhendo tudo o que tiver pipe '|' (formato de cartão)
+    cartoes_para_adicionar = []
+    for linha in linhas:
+        linha = linha.strip()
+        if not linha or linha.startswith('/'):
+            continue
+            
+        # Divide caso venha mais de um cartão na mesma linha por espaço
+        for parte in linha.split():
+            if '|' in parte:
+                cartoes_para_adicionar.append(parte.strip())
+
+    # Se não achou com pipe, pega qualquer linha longa que pareça cartão
     if not cartoes_para_adicionar:
-        for linha in linhas[1:]:
+        for linha in linhas:
             linha = linha.strip()
-            if len(linha) > 10:
+            if len(linha) > 10 and not linha.startswith('/'):
                 cartoes_para_adicionar.append(linha)
 
     if not cartoes_para_adicionar:
@@ -199,12 +193,12 @@ def cmd_add_gg_texto(message):
     bot.reply_to(message, relatorio, parse_mode="Markdown")
 
 
-@bot.message_handler(func=lambda message: message.text and message.text.lower().startswith('!dados'))
-def cmd_add_dados_texto(message):
+@bot.message_handler(commands=['add_dados'])
+def cmd_add_dados(message):
     if message.from_user.id != config.ADMIN_ID:
         return
     
-    texto_completo = message.text[6:].strip()
+    texto_completo = message.text.replace('/add_dados', '').strip()
     if not texto_completo:
         bot.reply_to(message, "⚠️ Envie a lista de dados dos titulares logo abaixo.", parse_mode="Markdown")
         return
