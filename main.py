@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Definitiva Blindada: Estado via Banco de Dados (Imune a Restarts/Instâncias)
+Versão Ultra-Rápida com Adição em Lote (Batch Processing)
 """
 import os
 import logging
@@ -147,7 +147,7 @@ def cmd_add_gg_etapa1(message):
         message, 
         f"🔍 **BIN Registrada!**\n\n"
         f"💳 **BIN:** `{bin6}` | **Bandeira:** `{bandeira}` | **Banco:** `{banco}`\n\n"
-        f"👇 **AGORA MANDE APENAS A LISTA DE CARTÕES** (cole direto abaixo sem comandos).", 
+        f"👇 **AGORA MANDE A LISTA COMPLETA** (pode colar dezenas de cartões de uma vez).", 
         parse_mode="Markdown"
     )
 
@@ -173,7 +173,7 @@ def cmd_add_streaming_etapa1(message):
     bot.reply_to(
         message, 
         f"🎬 **Streaming Configurado: `{nome_streaming}`**\n\n"
-        f"👇 **AGORA MANDE APENAS A LISTA DE CONTAS** (cole direto abaixo).", 
+        f"👇 **AGORA MANDE A LISTA DE CONTAS** (cole direto abaixo).", 
         parse_mode="Markdown"
     )
 
@@ -215,12 +215,11 @@ def processar_etapa2(message):
             bot.reply_to(message, "❌ Nenhum cartão válido encontrado. Envie novamente.")
             return
 
-        adicionados = 0
-        for item in cartoes:
-            db.adicionar_estoque_item(categoria='gg', conteudo=item, bin=bin6, banco=banco, bandeira=bandeira)
-            adicionados += 1
+        # Adiciona tudo de uma vez num único salvamento rápido
+        db.add_lote_estoque_wrapper = lambda c, cat, b, bc, band: None # placeholder
+        db.adicionar_lote_estoque(cartoes, categoria='gg', bin=bin6, banco=banco, bandeira=bandeira)
 
-        bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n💳 **BIN:** `{bin6}`\n📦 **Adicionados:** `+{adicionados} GGs`", parse_mode="Markdown")
+        bot.reply_to(message, f"✅ **Estoque Atualizado com Sucesso!**\n\n💳 **BIN:** `{bin6}`\n📦 **Adicionados:** `+{len(cartoes)} GGs` de uma vez!", parse_mode="Markdown")
 
     elif tipo == "streaming":
         nome_streaming = pendente["nome_streaming"]
@@ -229,12 +228,8 @@ def processar_etapa2(message):
             bot.reply_to(message, "❌ Nenhuma conta válida encontrada. Envie novamente.")
             return
 
-        adicionados = 0
-        for conta in contas:
-            db.adicionar_estoque_item(categoria='streaming', conteudo=conta, bin='000000', banco='GERAL', bandeira=nome_streaming)
-            adicionados += 1
-
-        bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n🎬 **Streaming:** `{nome_streaming}`\n📦 **Adicionadas:** `+{adicionados} Contas`", parse_mode="Markdown")
+        db.adicionar_lote_estoque(contas, categoria='streaming', bin='000000', banco='GERAL', bandeira=nome_streaming)
+        bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n🎬 **Streaming:** `{nome_streaming}`\n📦 **Adicionadas:** `+{len(contas)} Contas`", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['add_dados'])
@@ -245,13 +240,13 @@ def cmd_add_dados(message):
     if not texto_completo:
         bot.reply_to(message, "⚠️ Envie a lista de dados dos titulares logo após o comando.", parse_mode="Markdown")
         return
-    linhas = texto_completo.replace('\r\n', '\n').split('\n')
-    adicionados = 0
-    for linha in linhas:
-        if linha.strip():
-            db.adicionar_dado_titular(linha.strip())
-            adicionados += 1
-    bot.reply_to(message, f"✅ Sucesso! Cadastrados `{adicionados}` dados de titulares.", parse_mode="Markdown")
+    linhas = [l.strip() for l in texto_completo.replace('\r\n', '\n').split('\n') if l.strip()]
+    if not linhas:
+        bot.reply_to(message, "❌ Nenhum dado válido encontrado.")
+        return
+    
+    db.adicionar_lote_dados_titular(linhas)
+    bot.reply_to(message, f"✅ Sucesso! Cadastrados `{len(linhas)}` dados de titulares em lote.", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['add_esim'])
@@ -262,7 +257,7 @@ def cmd_add_esim(message):
     if not conteudo:
         bot.reply_to(message, "⚠️ Informe o eSIM. Ex: `/add_esim LPA:1$SMDP...`", parse_mode="Markdown")
         return
-    db.adicionar_estoque_item(categoria='esim', conteudo=conteudo, bin='000000', banco='GERAL', bandeira='ESIM')
+    db.adicionar_lote_estoque([conteudo], categoria='esim', bin='000000', banco='GERAL', bandeira='ESIM')
     bot.reply_to(message, "✅ eSIM adicionado com sucesso!", parse_mode="Markdown")
 
 
@@ -543,7 +538,7 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando com proteção definitiva contra conflito (409)...")
+    LOG.info("Bot rodando com processamento em lote ultra-rápido...")
     
     try:
         bot.remove_webhook()
