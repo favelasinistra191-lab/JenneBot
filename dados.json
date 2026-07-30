@@ -3310,9 +3310,76 @@
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
             "vendido": 0
+        },
+        {
+            "id": 367,
+            "categoria": "streaming",
+            "conteudo": "Xanonimo913@gmail.com|8Dedezembro|Tela02|0000",
+            "bin": "000000",
+            "banco": "GERAL",
+            "bandeira": "DISNEY+",
+            "vendido": 0
+        },
+        {
+            "id": 368,
+            "categoria": "streaming",
+            "conteudo": "Xanonimo913@gmail.com|8Dedezembro|tela03|1111",
+            "bin": "000000",
+            "banco": "GERAL",
+            "bandeira": "DISNEY+",
+            "vendido": 0
+        },
+        {
+            "id": 369,
+            "categoria": "streaming",
+            "conteudo": "Xanonimo913@gmail.com|8Dedezembro|Tela03|2222",
+            "bin": "000000",
+            "banco": "GERAL",
+            "bandeira": "DISNEY+",
+            "vendido": 0
+        },
+        {
+            "id": 370,
+            "categoria": "streaming",
+            "conteudo": "Jsscdasilvagomes@gmail.com|8Dedezembro|Tela02|0000",
+            "bin": "000000",
+            "banco": "GERAL",
+            "bandeira": "DISNEY+",
+            "vendido": 0
+        },
+        {
+            "id": 371,
+            "categoria": "streaming",
+            "conteudo": "Jsscdasilvagomes@gmail.com|8Dedezembro|tela03|1111",
+            "bin": "000000",
+            "banco": "GERAL",
+            "bandeira": "DISNEY+",
+            "vendido": 0
+        },
+        {
+            "id": 372,
+            "categoria": "streaming",
+            "conteudo": "Jsscdasilvagomes@gmail.com|8Dedezembro|Tela03|2222",
+            "bin": "000000",
+            "banco": "GERAL",
+            "bandeira": "DISNEY+",
+            "vendido": 0
+        },
+        {
+            "id": 373,
+            "categoria": "streaming",
+            "conteudo": "Jsscdasilvagomes@gmail.com|8Dedezembro|tela01|1814",
+            "bin": "000000",
+            "banco": "GERAL",
+            "bandeira": "DISNEY+",
+            "vendido": 0
         }
     ],
-    "admin_pendente": {},
+    "admin_pendente": {
+        "admin_id": 8776521959,
+        "tipo": "streaming",
+        "nome_streaming": "DISNEY+"
+    },
     "dados_titular": [
         {
             "id": 1,
