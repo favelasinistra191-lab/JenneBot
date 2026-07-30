@@ -229,4 +229,6 @@ def process_gift_redemption(message):
 # --- Execução Principal ---
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    bot.infinity_polling(skip_pending=True)
+    print("Iniciando bot em modo polling direto...")
+    bot.remove_webhook()
+    bot.polling(none_stop=True, interval=0, timeout=20)
