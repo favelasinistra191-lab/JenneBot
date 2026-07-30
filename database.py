@@ -1,6 +1,7 @@
-"""Módulo de banco de dados para JenneBot - PostgreSQL."""
+"""Módulo de banco de dados para JenneStoreBot - PostgreSQL."""
 from __future__ import annotations
 import logging
+import time
 from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Iterator, List, Tuple, Optional, Dict
@@ -14,7 +15,6 @@ LOG = logging.getLogger(__name__)
 if not DATABASE_URL:
     engine = create_engine("sqlite:///database.db", connect_args={"check_same_thread": False})
 else:
-    # Ajuste para URLs do Render/Supabase
     db_url = DATABASE_URL.replace("postgres://", "postgresql://", 1) if DATABASE_URL.startswith("postgres://") else DATABASE_URL
     engine = create_engine(db_url, pool_size=5, max_overflow=10)
 
@@ -34,6 +34,122 @@ def get_db() -> Iterator[Session]:
         db.rollback()
         raise
     finally:
+        db.close()
+
+
+def criar_tabelas() -> None:
+    is_sqlite = engine.url.drivername == 'sqlite'
+    id_type = "INTEGER PRIMARY KEY AUTOINCREMENT" if is_sqlite else "SERIAL PRIMARY KEY"
+
+    tables = [
+        f"CREATE TABLE IF NOT EXISTS usuarios(user_id BIGINT PRIMARY KEY, saldo REAL NOT NULL DEFAULT 0, nome TEXT, username TEXT, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+        f"CREATE TABLE IF NOT EXISTS estoque(id {id_type}, categoria TEXT NOT NULL, conteudo TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'disponivel', bin TEXT, banco TEXT, vendido_para BIGINT, vendido_em TIMESTAMP, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+        f"CREATE TABLE IF NOT EXISTS vendas(id {id_type}, categoria TEXT NOT NULL, valor REAL NOT NULL, user_id BIGINT, estoque_id INTEGER, invoice_id TEXT UNIQUE, data TIMESTAMP DEFAULT CURRENT_TIMESTAMP)",
+        f"CREATE TABLE IF NOT EXISTS gg_dados(id {id_type}, estoque_id INTEGER UNIQUE, nome TEXT NOT NULL, cpf_encrypted TEXT NOT NULL, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, pareado_em TIMESTAMP, status TEXT NOT NULL DEFAULT 'pendente')",
+        f"CREATE TABLE IF NOT EXISTS gifts(id {id_type}, codigo TEXT NOT NULL UNIQUE, valor REAL NOT NULL, status TEXT NOT NULL DEFAULT 'disponivel', criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP, resgatado_por BIGINT, resgatado_em TIMESTAMP)",
+        f"CREATE TABLE IF NOT EXISTS auditoria(id {id_type}, evento TEXT NOT NULL, detalhes TEXT, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)"
+    ]
+
+    max_retries = 10
+    for attempt in range(max_retries):
+        try:
+            with get_db() as session:
+                for table_cmd in tables:
+                    session.execute(text(table_cmd))
+            LOG.info("Tabelas criadas/verificadas com sucesso!")
+            return
+        except Exception as e:
+            LOG.warning(f"Tentativa {attempt+1}/{max_retries} falhou: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+            else:
+                LOG.error("Falha ao criar tabelas após 10 tentativas. Encerrando...")
+                raise
+
+
+def garantir_usuario(user_id: int, nome: str, username: Optional[str]) -> None:
+    with get_db() as session:
+        exists = session.execute(text("SELECT 1 FROM usuarios WHERE user_id = :uid"), {"uid": user_id}).fetchone()
+        if not exists:
+            session.execute(text("INSERT INTO usuarios (user_id, nome, username) VALUES (:uid, :nome, :user)"), {"uid": user_id, "nome": nome, "user": username})
+
+
+def obter_saldo(user_id: int) -> float:
+    with get_db() as session:
+        row = session.execute(text("SELECT saldo FROM usuarios WHERE user_id = :uid"), {"uid": user_id}).fetchone()
+        return float(row[0]) if row else 0.0
+
+
+def adicionar_estoque(categoria: str, conteudo: str, bin_val: Optional[str] = None, banco: Optional[str] = None) -> None:
+    with get_db() as session:
+        session.execute(text("INSERT INTO estoque (categoria, conteudo, bin, banco) VALUES (:cat, :cont, :bin, :banco)"), {"cat": categoria, "cont": conteudo, "bin": bin_val, "banco": banco})
+
+
+def adicionar_dados_gg(nome: str, cpf_enc: str) -> None:
+    with get_db() as session:
+        session.execute(text("INSERT INTO gg_dados (nome, cpf_encrypted) VALUES (:nome, :cpf)"), {"nome": nome, "cpf": cpf_enc})
+
+
+def listar_estoque_gg() -> List[Tuple[str, str, int]]:
+    with get_db() as session:
+        rows = session.execute(text("SELECT bin, banco, COUNT(*) FROM estoque WHERE categoria='gg' AND status='disponivel' GROUP BY bin, banco ORDER BY COUNT(*) DESC")).fetchall()
+        return [(r[0] or "N/A", r[1] or "N/A", r[2]) for r in rows]
+
+
+def contar_estoque_categoria(cat: str) -> int:
+    with get_db() as session:
+        row = session.execute(text("SELECT COUNT(*) FROM estoque WHERE categoria = :cat AND status = 'disponivel'"), {"cat": cat}).fetchone()
+        return row[0] if row else 0
+
+
+def realizar_venda(user_id: int, categoria: str, valor: float, bin_filter: Optional[str] = None) -> Tuple[str, Optional[int], Optional[str]]:
+    saldo = obter_saldo(user_id)
+    if saldo < valor:
+        return ("saldo_insuficiente", None, None)
+
+    with get_db() as session:
+        if bin_filter:
+            rows = session.execute(text("SELECT id, conteudo FROM estoque WHERE categoria = :cat AND status = 'disponivel' AND bin = :bin LIMIT 1"), {"cat": categoria, "bin": bin_filter}).fetchall()
+        else:
+            rows = session.execute(text("SELECT id, conteudo FROM estoque WHERE categoria = :cat AND status = 'disponivel' LIMIT 1"), {"cat": categoria}).fetchall()
+
+        if not rows:
+            return ("sem_estoque", None, None)
+
+        item_id, conteudo = rows[0]
+
+        session.execute(text("UPDATE estoque SET status = 'vendido', vendido_para = :uid, vendido_em = NOW() WHERE id = :id"), {"uid": user_id, "id": item_id})
+        session.execute(text("UPDATE usuarios SET saldo = saldo - :val WHERE user_id = :uid"), {"val": valor, "uid": user_id})
+        session.execute(text("INSERT INTO vendas (categoria, valor, user_id, estoque_id) VALUES (:cat, :val, :uid, :est)"), {"cat": categoria, "val": valor, "uid": user_id, "est": item_id})
+
+        return ("ok", item_id, conteudo)
+
+
+def obter_dados_venda_gg(estoque_id: int) -> Tuple[str, str, str, Optional[str], Optional[str]]:
+    with get_db() as session:
+        row = session.execute(text("SELECT e.conteudo, e.bin, e.banco, g.nome, g.cpf_encrypted FROM estoque e LEFT JOIN gg_dados g ON g.estoque_id = e.id WHERE e.id = :id"), {"id": estoque_id}).fetchone()
+        return row if row else ("", "", "", None, None)
+
+
+def obter_dados_relatorio() -> Tuple[int, float, int]:
+    with get_db() as session:
+        vendas = session.execute(text("SELECT COUNT(*), COALESCE(SUM(valor), 0) FROM vendas")).fetchone()
+        usuarios = session.execute(text("SELECT COUNT(*) FROM usuarios")).fetchone()
+        return (vendas[0] or 0, float(vendas[1] or 0), usuarios[0] or 0)
+
+
+def resgatar_gift(codigo: str, user_id: int) -> Optional[float]:
+    with get_db() as session:
+        row = session.execute(text("SELECT id, valor, status FROM gifts WHERE codigo = :cod"), {"cod": codigo}).fetchone()
+        if not row:
+            return None
+        gift_id, valor, status = row
+        if status != "disponivel":
+            return None
+
+        session.execute(text("UPDATE gifts SET status = 'resgatado', resgatado_por = :uid, resgatado_em = NOW() WHERE id = :id"), {"uid": user_id, "id": gift_id})
+        session.execute(text("UPDATE usuarios SET saldo = saldo + :val WHERE user_id = :uid"), {"val": valor, "uid": user_id})
+        return valor
         db.close()
 
 def criar_tabelas() -> None:
