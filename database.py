@@ -1,153 +1,258 @@
+"""
+Módulo de Banco de Dados - JenneStoreBot
+Gerenciamento de usuários, estoque, vendas e criptografia.
+"""
 import os
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
+import logging
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime
+from sqlalchemy.orm import declarative_base, sessionmaker
+from datetime import datetime
+import config
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+LOG = logging.getLogger("JenneDatabase")
+
+# Configuração do Banco de Dados PostgreSQL (Aiven)
+DATABASE_URL = os.getenv("DATABASE_URL", getattr(config, "DATABASE_URL", ""))
 
 if not DATABASE_URL:
-    raise ValueError("A variável de ambiente DATABASE_URL não foi configurada!")
+    LOG.error("DATABASE_URL não configurada!")
 
-# Corrige o prefixo de 'postgres://' para 'postgresql://' exigido pelo SQLAlchemy moderno
-if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-
-# Cria o engine com pool_pre_ping para gerenciar reconexões automaticamente
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-
+engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-def get_db():
-    db = SessionLocal()
+
+# --- Modelos das Tabelas ---
+class Usuario(Base):
+    __tablename__ = 'usuarios'
+    user_id = Column(Integer, primary_key=True)
+    nome = Column(String(150))
+    username = Column(String(100), nullable=True)
+    saldo = Column(Float, default=0.0)
+    criado_em = Column(DateTime, default=datetime.utcnow)
+
+
+class Estoque(Base):
+    __tablename__ = 'estoque'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    categoria = Column(String(50))  # 'streaming', 'esim', 'gg'
+    conteudo = Column(Text)          # login:senha ou numero|validade|cvv
+    bin = Column(String(20), nullable=True)
+    banco = Column(String(100), nullable=True)
+    vendido = Column(Integer, default=0)  # 0 = Disponível, 1 = Vendido
+
+
+class DadosGG(Base):
+    __tablename__ = 'dados_gg'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    nome = Column(String(150))
+    cpf_encrypted = Column(Text)
+    usado = Column(Integer, default=0)
+
+
+class Venda(Base):
+    __tablename__ = 'vendas'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer)
+    categoria = Column(String(50))
+    valor = Column(Float)
+    item_id = Column(Integer, nullable=True)
+    data = Column(DateTime, default=datetime.utcnow)
+
+
+class GiftCard(Base):
+    __tablename__ = 'gift_cards'
+    codigo = Column(String(100), primary_key=True)
+    valor = Column(Float)
+    usado = Column(Integer, default=0)
+
+
+# --- Funções de Inicialização ---
+def criar_tabelas():
     try:
-        yield db
-    finally:
-        db.close()
+        Base.metadata.create_all(bind=engine)
+        LOG.info("Tabelas verificadas/criadas com sucesso.")
+    except Exception as e:
+        LOG.error(f"Erro ao criar tabelas: {e}")
 
-def criar_tabelas():
-    with engine.begin() as conexao:
-        conexao.execute(text("""
-            CREATE TABLE IF NOT EXISTS usuarios (
-                user_id BIGINT PRIMARY KEY,
-                saldo NUMERIC(10, 2) DEFAULT 0.00,
-                nome TEXT,
-                username TEXT,
-                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """))
-    print("Tabelas verificadas/criadas com sucesso.")
 
-def garantir_usuario(user_id: int, nome: str, username: str):
-    with SessionLocal() as session:
-        try:
-            resultado = session.execute(
-                text("SELECT user_id FROM usuarios WHERE user_id = :uid"),
-                {"uid": user_id}
-            ).fetchone()
-
-            if not resultado:
-                session.execute(
-                    text("""
-                        INSERT INTO usuarios (user_id, saldo, nome, username)
-                        VALUES (:uid, 0.00, :nome, :username)
-                    """),
-                    {"uid": user_id, "nome": nome, "username": username}
-                )
-                session.commit()
-        except Exception as e:
-            session.rollback()
-            print(f"Erro ao garantir usuário: {e}")
-            raise e
-        try:
-            resultado = session.execute(
-                text("SELECT user_id FROM usuarios WHERE user_id = :uid"),
-                {"uid": user_id}
-            ).fetchone()
-
-            if not resultado:
-                session.execute(
-                    text("""
-                        INSERT INTO usuarios (user_id, saldo, nome, username)
-                        VALUES (:uid, 0.00, :nome, :username)
-                    """),
-                    {"uid": user_id, "nome": nome, "username": username}
-                )
-                session.commit()
-        except Exception as e:
-            session.rollback()
-            print(f"Erro ao garantir usuário: {e}")
-            raise e
-    db = SessionLocal()
+# --- Funções de Usuário ---
+def garantir_usuario(user_id, nome, username):
+    session = SessionLocal()
     try:
-        yield db
+        user = session.query(Usuario).filter_by(user_id=user_id).first()
+        if not user:
+            user = Usuario(user_id=user_id, nome=nome, username=username, saldo=0.0)
+            session.add(user)
+        else:
+            user.nome = nome
+            user.username = username
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        LOG.error(f"Erro em garantir_usuario: {e}")
     finally:
-        db.close()
+        session.close()
 
-def criar_tabelas():
-    with engine.begin() as conexao:
-        conexao.execute(text("""
-            CREATE TABLE IF NOT EXISTS usuarios (
-                user_id BIGINT PRIMARY KEY,
-                saldo NUMERIC(10, 2) DEFAULT 0.00,
-                nome TEXT,
-                username TEXT,
-                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """))
-    print("Tabelas verificadas/criadas com sucesso.")
 
-def garantir_usuario(user_id: int, nome: str, username: str):
-    with SessionLocal() as session:
-        try:
-            resultado = session.execute(
-                text("SELECT user_id FROM usuarios WHERE user_id = :uid"),
-                {"uid": user_id}
-            ).fetchone()
+def obter_saldo(user_id):
+    session = SessionLocal()
+    try:
+        user = session.query(Usuario).filter_by(user_id=user_id).first()
+        return user.saldo if user else 0.0
+    except Exception as e:
+        LOG.error(f"Erro em obter_saldo: {e}")
+        return 0.0
+    finally:
+        session.close()
 
-            if not resultado:
-                session.execute(
-                    text("""
-                        INSERT INTO usuarios (user_id, saldo, nome, username)
-                        VALUES (:uid, 0.00, :nome, :username)
-                    """),
-                    {"uid": user_id, "nome": nome, "username": username}
-                )
-                session.commit()
-        except Exception as e:
-            session.rollback()
-            print(f"Erro ao garantir usuário: {e}")
-            raise e
 
-def criar_tabelas():
-    with engine.begin() as conexao:
-        conexao.execute(text("""
-            CREATE TABLE IF NOT EXISTS usuarios (
-                user_id BIGINT PRIMARY KEY,
-                saldo NUMERIC(10, 2) DEFAULT 0.00,
-                nome TEXT,
-                username TEXT,
-                atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        """))
-    print("Tabelas verificadas/criadas com sucesso.")
+# --- Funções de Estoque e Vendas ---
+def listar_estoque_gg():
+    session = SessionLocal()
+    try:
+        from sqlalchemy import func
+        results = (
+            session.query(Estoque.bin, Estoque.banco, func.count(Estoque.id))
+            .filter_by(categoria='gg', vendido=0)
+            .group_by(Estoque.bin, Estoque.banco)
+            .all()
+        )
+        return results
+    except Exception as e:
+        LOG.error(f"Erro em listar_estoque_gg: {e}")
+        return []
+    finally:
+        session.close()
 
-def garantir_usuario(user_id: int, nome: str, username: str):
-    with SessionLocal() as session:
-        try:
-            resultado = session.execute(
-                text("SELECT user_id FROM usuarios WHERE user_id = :uid"),
-                {"uid": user_id}
-            ).fetchone()
 
-            if not resultado:
-                session.execute(
-                    text("""
-                        INSERT INTO usuarios (user_id, saldo, nome, username)
-                        VALUES (:uid, 0.00, :nome, :username)
-                    """),
-                    {"uid": user_id, "nome": nome, "username": username}
-                )
-                session.commit()
-        except Exception as e:
-            session.rollback()
-            print(f"Erro ao garantir usuário: {e}")
-            raise e
+def contar_estoque_categoria(categoria):
+    session = SessionLocal()
+    try:
+        return session.query(Estoque).filter_by(categoria=categoria, vendido=0).count()
+    except Exception as e:
+        LOG.error(f"Erro em contar_estoque_categoria: {e}")
+        return 0
+    finally:
+        session.close()
+
+
+def realizar_venda(user_id, categoria, preco, bin_v=None):
+    session = SessionLocal()
+    try:
+        user = session.query(Usuario).filter_by(user_id=user_id).first()
+        if not user or user.saldo < preco:
+            return "saldo_insuficiente", None, None
+
+        query = session.query(Estoque).filter_by(categoria=categoria, vendido=0)
+        if bin_v:
+            query = query.filter_by(bin=bin_v)
+        
+        item = query.first()
+        if not item:
+            return "sem_estoque", None, None
+
+        # Desconta saldo e marca item como vendido
+        user.saldo -= preco
+        item.vendido = 1
+
+        venda = Venda(user_id=user_id, categoria=categoria, valor=preco, item_id=item.id)
+        session.add(venda)
+        session.commit()
+
+        return "ok", item.id, item.conteudo
+    except Exception as e:
+        session.rollback()
+        LOG.error(f"Erro em realizar_venda: {e}")
+        return "erro_interno", None, None
+    finally:
+        session.close()
+
+
+def obter_dados_venda_gg(item_id):
+    session = SessionLocal()
+    try:
+        item = session.query(Estoque).filter_by(id=item_id).first()
+        if not item:
+            return None
+        
+        # Pega um dado de titular não usado
+        dado = session.query(DadosGG).filter_by(usado=0).first()
+        titular = dado.nome if dado else "Não informado"
+        cpf_enc = dado.cpf_encrypted if dado else None
+        
+        if dado:
+            dado.usado = 1
+            session.commit()
+
+        return (item.conteudo, item.bin, item.banco, titular, cpf_enc)
+    except Exception as e:
+        LOG.error(f"Erro em obter_dados_venda_gg: {e}")
+        return None
+    finally:
+        session.close()
+
+
+# --- Funções Admin ---
+def adicionar_estoque(categoria, conteudo, bin_v=None, banco=None):
+    session = SessionLocal()
+    try:
+        item = Estoque(categoria=categoria, conteudo=conteudo, bin=bin_v, banco=banco, vendido=0)
+        session.add(item)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        LOG.error(f"Erro em adicionar_estoque: {e}")
+    finally:
+        session.close()
+
+
+def adicionar_dados_gg(nome, cpf_encrypted):
+    session = SessionLocal()
+    try:
+        dado = DadosGG(nome=nome, cpf_encrypted=cpf_encrypted, usado=0)
+        session.add(dado)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        LOG.error(f"Erro em adicionar_dados_gg: {e}")
+    finally:
+        session.close()
+
+
+def obter_dados_relatorio():
+    session = SessionLocal()
+    try:
+        from sqlalchemy import func
+        total_vendas = session.query(Venda).count()
+        faturamento = session.query(func.sum(Venda.valor)).scalar() or 0.0
+        clientes = session.query(Usuario).count()
+        return total_vendas, faturamento, clientes
+    except Exception as e:
+        LOG.error(f"Erro em obter_dados_relatorio: {e}")
+        return 0, 0.0, 0
+    finally:
+        session.close()
+
+
+def resgatar_gift(codigo, user_id):
+    session = SessionLocal()
+    try:
+        gift = session.query(GiftCard).filter_by(codigo=codigo, usado=0).first()
+        if not gift:
+            return None
+        
+        user = session.query(Usuario).filter_by(user_id=user_id).first()
+        if not user:
+            return None
+
+        user.saldo += gift.valor
+        gift.usado = 1
+        session.commit()
+        return gift.valor
+    except Exception as e:
+        session.rollback()
+        LOG.error(f"Erro em resgatar_gift: {e}")
+        return None
+    finally:
+        session.close()
