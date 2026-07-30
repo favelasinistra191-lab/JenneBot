@@ -1,19 +1,17 @@
 """
 Módulo de Banco de Dados - JenneStoreBot
-Gerenciamento de usuários, estoque, vendas e criptografia.
+Estrutura completa com detecção de BIN, GG casada com Dados, eSIM e Streaming.
 """
 import os
 import logging
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, func
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import config
 
 LOG = logging.getLogger("JenneDatabase")
 
-# Configuração do Banco de Dados PostgreSQL (Aiven) - Blindado contra erro de dialeto
 DATABASE_URL = os.getenv("DATABASE_URL", getattr(config, "DATABASE_URL", ""))
-
 if not DATABASE_URL:
     LOG.error("DATABASE_URL não configurada!")
 
@@ -35,21 +33,21 @@ class Usuario(Base):
     criado_em = Column(DateTime, default=datetime.utcnow)
 
 
-class Estoque(Base):
-    __tablename__ = 'estoque'
+class EstoqueGeral(Base):
+    __tablename__ = 'estoque_geral'
     id = Column(Integer, primary_key=True, autoincrement=True)
     categoria = Column(String(50))  # 'streaming', 'esim', 'gg'
-    conteudo = Column(Text)          # login:senha ou numero|validade|cvv
-    bin = Column(String(20), nullable=True)
-    banco = Column(String(100), nullable=True)
-    vendido = Column(Integer, default=0)  # 0 = Disponível, 1 = Vendido
+    sub_tipo = Column(String(100), nullable=True)  # Nome da Empresa (Streaming) ou Operadora (eSIM)
+    conteudo = Column(Text)          # Login:Senha ou QR Code / Linha do eSIM
+    bin = Column(String(20), nullable=True)  # 6 primeiros dígitos (para GG)
+    banco = Column(String(100), nullable=True) # Nome do Banco detectado/informado
+    vendido = Column(Integer, default=0)
 
 
-class DadosGG(Base):
-    __tablename__ = 'dados_gg'
+class DadosTitularGG(Base):
+    __tablename__ = 'dados_titular_gg'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    nome = Column(String(150))
-    cpf_encrypted = Column(Text)
+    dado = Column(Text)  # Nome, CPF, Endereço, etc.
     usado = Column(Integer, default=0)
 
 
@@ -59,7 +57,7 @@ class Venda(Base):
     user_id = Column(Integer)
     categoria = Column(String(50))
     valor = Column(Float)
-    item_id = Column(Integer, nullable=True)
+    detalhes_entrega = Column(Text)
     data = Column(DateTime, default=datetime.utcnow)
 
 
@@ -70,7 +68,6 @@ class GiftCard(Base):
     usado = Column(Integer, default=0)
 
 
-# --- Funções de Inicialização ---
 def criar_tabelas():
     try:
         Base.metadata.create_all(bind=engine)
@@ -79,7 +76,6 @@ def criar_tabelas():
         LOG.error(f"Erro ao criar tabelas: {e}")
 
 
-# --- Funções de Usuário ---
 def garantir_usuario(user_id, nome, username):
     session = SessionLocal()
     try:
@@ -110,113 +106,111 @@ def obter_saldo(user_id):
         session.close()
 
 
-# --- Funções de Estoque e Vendas ---
-def listar_estoque_gg():
+# --- Funções de Estoque e Cadastro Admin ---
+def adicionar_estoque_item(categoria, conteudo, sub_tipo=None, bin_v=None, banco=None):
     session = SessionLocal()
     try:
-        from sqlalchemy import func
+        item = EstoqueGeral(
+            categoria=categoria,
+            sub_tipo=sub_tipo,
+            conteudo=conteudo,
+            bin=bin_v,
+            banco=banco,
+            vendido=0
+        )
+        session.add(item)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        LOG.error(f"Erro em adicionar_estoque_item: {e}")
+    finally:
+        session.close()
+
+
+def adicionar_dado_titular(dado):
+    session = SessionLocal()
+    try:
+        item = DadosTitularGG(dado=dado, usado=0)
+        session.add(item)
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        LOG.error(f"Erro em adicionar_dado_titular: {e}")
+    finally:
+        session.close()
+
+
+def listar_estoque_gg_agrupado():
+    """Retorna BIN, Banco e Quantidade Disponível para exibir no formato solicitado"""
+    session = SessionLocal()
+    try:
         results = (
-            session.query(Estoque.bin, Estoque.banco, func.count(Estoque.id))
+            session.query(EstoqueGeral.bin, EstoqueGeral.banco, func.count(EstoqueGeral.id))
             .filter_by(categoria='gg', vendido=0)
-            .group_by(Estoque.bin, Estoque.banco)
+            .group_by(EstoqueGeral.bin, EstoqueGeral.banco)
             .all()
         )
         return results
     except Exception as e:
-        LOG.error(f"Erro em listar_estoque_gg: {e}")
+        LOG.error(f"Erro em listar_estoque_gg_agrupado: {e}")
         return []
     finally:
         session.close()
 
 
-def contar_estoque_categoria(categoria):
+def contar_estoque(categoria, sub_tipo=None):
     session = SessionLocal()
     try:
-        return session.query(Estoque).filter_by(categoria=categoria, vendido=0).count()
+        query = session.query(EstoqueGeral).filter_by(categoria=categoria, vendido=0)
+        if sub_tipo:
+            query = query.filter_by(sub_tipo=sub_tipo)
+        return query.count()
     except Exception as e:
-        LOG.error(f"Erro em contar_estoque_categoria: {e}")
+        LOG.error(f"Erro em contar_estoque: {e}")
         return 0
     finally:
         session.close()
 
 
-def realizar_venda(user_id, categoria, preco, bin_v=None):
+def realizar_compra_item(user_id, categoria, preco, sub_tipo=None, bin_v=None):
     session = SessionLocal()
     try:
         user = session.query(Usuario).filter_by(user_id=user_id).first()
         if not user or user.saldo < preco:
-            return "saldo_insuficiente", None, None
+            return "saldo_insuficiente", None
 
-        query = session.query(Estoque).filter_by(categoria=categoria, vendido=0)
+        query = session.query(EstoqueGeral).filter_by(categoria=categoria, vendido=0)
+        if sub_tipo:
+            query = query.filter_by(sub_tipo=sub_tipo)
         if bin_v:
             query = query.filter_by(bin=bin_v)
-        
+
         item = query.first()
         if not item:
-            return "sem_estoque", None, None
+            return "sem_estoque", None
 
         user.saldo -= preco
         item.vendido = 1
+        conteudo_final = item.conteudo
 
-        venda = Venda(user_id=user_id, categoria=categoria, valor=preco, item_id=item.id)
+        # Se for GG, busca um dado de titular não usado e entrega junto!
+        if categoria == 'gg':
+            dado_titular = session.query(DadosTitularGG).filter_by(usado=0).first()
+            if dado_titular:
+                dado_titular.usado = 1
+                conteudo_final += f"\n\n📋 **Dados do Titular:**\n{dado_titular.dado}"
+            else:
+                conteudo_final += f"\n\n📋 **Dados do Titular:** Não disponível no momento."
+
+        venda = Venda(user_id=user_id, categoria=categoria, valor=preco, detalhes_entrega=conteudo_final)
         session.add(venda)
         session.commit()
 
-        return "ok", item.id, item.conteudo
+        return "ok", conteudo_final
     except Exception as e:
         session.rollback()
-        LOG.error(f"Erro em realizar_venda: {e}")
-        return "erro_interno", None, None
-    finally:
-        session.close()
-
-
-def obter_dados_venda_gg(item_id):
-    session = SessionLocal()
-    try:
-        item = session.query(Estoque).filter_by(id=item_id).first()
-        if not item:
-            return None
-        
-        dado = session.query(DadosGG).filter_by(usado=0).first()
-        titular = dado.nome if dado else "Não informado"
-        cpf_enc = dado.cpf_encrypted if dado else None
-        
-        if dado:
-            dado.usado = 1
-            session.commit()
-
-        return (item.conteudo, item.bin, item.banco, titular, cpf_enc)
-    except Exception as e:
-        LOG.error(f"Erro em obter_dados_venda_gg: {e}")
-        return None
-    finally:
-        session.close()
-
-
-# --- Funções Admin ---
-def adicionar_estoque(categoria, conteudo, bin_v=None, banco=None):
-    session = SessionLocal()
-    try:
-        item = Estoque(categoria=categoria, conteudo=conteudo, bin=bin_v, banco=banco, vendido=0)
-        session.add(item)
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        LOG.error(f"Erro em adicionar_estoque: {e}")
-    finally:
-        session.close()
-
-
-def adicionar_dados_gg(nome, cpf_encrypted):
-    session = SessionLocal()
-    try:
-        dado = DadosGG(nome=nome, cpf_encrypted=cpf_encrypted, usado=0)
-        session.add(dado)
-        session.commit()
-    except Exception as e:
-        session.rollback()
-        LOG.error(f"Erro em adicionar_dados_gg: {e}")
+        LOG.error(f"Erro em realizar_compra_item: {e}")
+        return "erro_interno", None
     finally:
         session.close()
 
@@ -224,7 +218,6 @@ def adicionar_dados_gg(nome, cpf_encrypted):
 def obter_dados_relatorio():
     session = SessionLocal()
     try:
-        from sqlalchemy import func
         total_vendas = session.query(Venda).count()
         faturamento = session.query(func.sum(Venda.valor)).scalar() or 0.0
         clientes = session.query(Usuario).count()
@@ -232,28 +225,5 @@ def obter_dados_relatorio():
     except Exception as e:
         LOG.error(f"Erro em obter_dados_relatorio: {e}")
         return 0, 0.0, 0
-    finally:
-        session.close()
-
-
-def resgatar_gift(codigo, user_id):
-    session = SessionLocal()
-    try:
-        gift = session.query(GiftCard).filter_by(codigo=codigo, usado=0).first()
-        if not gift:
-            return None
-        
-        user = session.query(Usuario).filter_by(user_id=user_id).first()
-        if not user:
-            return None
-
-        user.saldo += gift.valor
-        gift.usado = 1
-        session.commit()
-        return gift.valor
-    except Exception as e:
-        session.rollback()
-        LOG.error(f"Erro em resgatar_gift: {e}")
-        return None
     finally:
         session.close()
