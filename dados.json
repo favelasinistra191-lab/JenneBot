@@ -2779,9 +2779,546 @@
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
             "vendido": 0
+        },
+        {
+            "id": 308,
+            "categoria": "gg",
+            "conteudo": "4220619674468528|12/32|595",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 309,
+            "categoria": "gg",
+            "conteudo": "4220619674488856|12/32|867",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 310,
+            "categoria": "gg",
+            "conteudo": "4220619674401883|12/32|230",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 311,
+            "categoria": "gg",
+            "conteudo": "4220619674413631|12/32|828",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 312,
+            "categoria": "gg",
+            "conteudo": "4220619674414506|12/32|572",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 313,
+            "categoria": "gg",
+            "conteudo": "4220619674400075|12/32|688",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 314,
+            "categoria": "gg",
+            "conteudo": "4220619674433571|12/32|843",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 315,
+            "categoria": "gg",
+            "conteudo": "4220619674468841|12/32|065",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 316,
+            "categoria": "gg",
+            "conteudo": "4220619674446326|12/32|600",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 317,
+            "categoria": "gg",
+            "conteudo": "4220619674402022|12/32|855",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 318,
+            "categoria": "gg",
+            "conteudo": "4220619674404242|12/32|150",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 319,
+            "categoria": "gg",
+            "conteudo": "4220619674427011|12/32|418",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 320,
+            "categoria": "gg",
+            "conteudo": "4220619674488336|12/32|892",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 321,
+            "categoria": "gg",
+            "conteudo": "4220619674466282|12/32|338",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 322,
+            "categoria": "gg",
+            "conteudo": "4220619674453678|12/32|157",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 323,
+            "categoria": "gg",
+            "conteudo": "4220619674450443|12/32|326",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 324,
+            "categoria": "gg",
+            "conteudo": "4220619674460020|12/32|367",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 325,
+            "categoria": "gg",
+            "conteudo": "4220619674471365|12/32|901",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 326,
+            "categoria": "gg",
+            "conteudo": "4220619674402188|12/32|132",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 327,
+            "categoria": "gg",
+            "conteudo": "4220619674411361|12/32|127",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 328,
+            "categoria": "gg",
+            "conteudo": "4220619674427078|12/32|213",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 329,
+            "categoria": "gg",
+            "conteudo": "4220619674415685|12/32|186",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 330,
+            "categoria": "gg",
+            "conteudo": "4220619674465151|12/32|211",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 331,
+            "categoria": "gg",
+            "conteudo": "4220619674418556|12/32|620",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 332,
+            "categoria": "gg",
+            "conteudo": "4220619674485738|12/32|644",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 333,
+            "categoria": "gg",
+            "conteudo": "4220619674410686|12/32|782",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 334,
+            "categoria": "gg",
+            "conteudo": "4220619674475580|12/32|171",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 335,
+            "categoria": "gg",
+            "conteudo": "4220619674486777|12/32|679",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 336,
+            "categoria": "gg",
+            "conteudo": "4220619674444230|12/32|077",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 337,
+            "categoria": "gg",
+            "conteudo": "4220619674456572|12/32|808",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 338,
+            "categoria": "gg",
+            "conteudo": "4220619674425163|12/32|081",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 339,
+            "categoria": "gg",
+            "conteudo": "4220619674410157|12/32|517",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 340,
+            "categoria": "gg",
+            "conteudo": "4220619674488500|12/32|238",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 341,
+            "categoria": "gg",
+            "conteudo": "4220619674460046|12/32|228",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 342,
+            "categoria": "gg",
+            "conteudo": "4220619674411304|12/32|286",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 343,
+            "categoria": "gg",
+            "conteudo": "4220619674485373|12/32|743",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 344,
+            "categoria": "gg",
+            "conteudo": "4220619674417384|12/32|498",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 345,
+            "categoria": "gg",
+            "conteudo": "4220619674445054|12/32|046",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 346,
+            "categoria": "gg",
+            "conteudo": "4220619674400422|12/32|474",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 347,
+            "categoria": "gg",
+            "conteudo": "4220619674407740|12/32|150",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 348,
+            "categoria": "gg",
+            "conteudo": "4220619674416071|12/32|875",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 349,
+            "categoria": "gg",
+            "conteudo": "4220619674422426|12/32|143",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 350,
+            "categoria": "gg",
+            "conteudo": "4220619674433183|12/32|214",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 351,
+            "categoria": "gg",
+            "conteudo": "4220619674464303|12/32|439",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 352,
+            "categoria": "gg",
+            "conteudo": "4220619674444230|12/32|732",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 353,
+            "categoria": "gg",
+            "conteudo": "4220619674466076|12/32|455",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 354,
+            "categoria": "gg",
+            "conteudo": "4220619674465383|12/32|521",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 355,
+            "categoria": "gg",
+            "conteudo": "4220619674416444|12/32|956",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 356,
+            "categoria": "gg",
+            "conteudo": "4220619674456267|12/32|086",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 357,
+            "categoria": "gg",
+            "conteudo": "4220619674468536|12/32|165",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 358,
+            "categoria": "gg",
+            "conteudo": "4220619674487601|12/32|598",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 359,
+            "categoria": "gg",
+            "conteudo": "4220619674433506|12/32|253",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 360,
+            "categoria": "gg",
+            "conteudo": "4220619674417608|12/32|850",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 361,
+            "categoria": "gg",
+            "conteudo": "4220619674472140|12/32|781",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 362,
+            "categoria": "gg",
+            "conteudo": "4220619674423820|12/32|804",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 363,
+            "categoria": "gg",
+            "conteudo": "4220619674474625|12/32|131",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 364,
+            "categoria": "gg",
+            "conteudo": "4220619674444024|12/32|025",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 365,
+            "categoria": "gg",
+            "conteudo": "4220619674416808|12/32|554",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 366,
+            "categoria": "gg",
+            "conteudo": "4220619674488054|12/32|342",
+            "bin": "422061",
+            "banco": "BANCO DO BRASIL / GERAL",
+            "bandeira": "VISA",
+            "vendido": 0
         }
     ],
-    "admin_pendente": {},
+    "admin_pendente": {
+        "admin_id": 8776521959,
+        "tipo": "gg",
+        "bin": "422061",
+        "banco": "BANCO DO BRASIL / GERAL",
+        "bandeira": "VISA"
+    },
     "dados_titular": [
         {
             "id": 1,
