@@ -11,11 +11,14 @@ import config
 
 LOG = logging.getLogger("JenneDatabase")
 
-# Configuração do Banco de Dados PostgreSQL (Aiven)
+# Configuração do Banco de Dados PostgreSQL (Aiven) - Blindado contra erro de dialeto
 DATABASE_URL = os.getenv("DATABASE_URL", getattr(config, "DATABASE_URL", ""))
 
 if not DATABASE_URL:
     LOG.error("DATABASE_URL não configurada!")
+
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -152,7 +155,6 @@ def realizar_venda(user_id, categoria, preco, bin_v=None):
         if not item:
             return "sem_estoque", None, None
 
-        # Desconta saldo e marca item como vendido
         user.saldo -= preco
         item.vendido = 1
 
@@ -176,7 +178,6 @@ def obter_dados_venda_gg(item_id):
         if not item:
             return None
         
-        # Pega um dado de titular não usado
         dado = session.query(DadosGG).filter_by(usado=0).first()
         titular = dado.nome if dado else "Não informado"
         cpf_enc = dado.cpf_encrypted if dado else None
