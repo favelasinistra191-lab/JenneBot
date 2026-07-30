@@ -1,10 +1,9 @@
 """
 Módulo de Banco de Dados - JenneStoreBot
-Estrutura completa com detecção de BIN, GG casada com Dados, eSIM e Streaming.
 """
 import os
 import logging
-from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, func
+from sqlalchemy import create_engine, Column, Integer, String, Float, Text, DateTime, func, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 from datetime import datetime
 import config
@@ -23,31 +22,30 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 
-# --- Modelos das Tabelas ---
 class Usuario(Base):
     __tablename__ = 'usuarios'
     user_id = Column(Integer, primary_key=True)
-    nome = Column(String(150))
+    nome = Column(String(150), nullable=True)
     username = Column(String(100), nullable=True)
     saldo = Column(Float, default=0.0)
-    criado_em = Column(DateTime, default=datetime.utcnow)
+    criado_em = Column(DateTime, default=datetime.utcnow, nullable=True)
 
 
 class EstoqueGeral(Base):
     __tablename__ = 'estoque_geral'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    categoria = Column(String(50))  # 'streaming', 'esim', 'gg'
-    sub_tipo = Column(String(100), nullable=True)  # Nome da Empresa (Streaming) ou Operadora (eSIM)
-    conteudo = Column(Text)          # Login:Senha ou QR Code / Linha do eSIM
-    bin = Column(String(20), nullable=True)  # 6 primeiros dígitos (para GG)
-    banco = Column(String(100), nullable=True) # Nome do Banco detectado/informado
+    categoria = Column(String(50))
+    sub_tipo = Column(String(100), nullable=True)
+    conteudo = Column(Text)
+    bin = Column(String(20), nullable=True)
+    banco = Column(String(100), nullable=True)
     vendido = Column(Integer, default=0)
 
 
 class DadosTitularGG(Base):
     __tablename__ = 'dados_titular_gg'
     id = Column(Integer, primary_key=True, autoincrement=True)
-    dado = Column(Text)  # Nome, CPF, Endereço, etc.
+    dado = Column(Text)
     usado = Column(Integer, default=0)
 
 
@@ -71,6 +69,9 @@ class GiftCard(Base):
 def criar_tabelas():
     try:
         Base.metadata.create_all(bind=engine)
+        with engine.connect() as conn:
+            conn.execute(text('ALTER TABLE usuarios ADD COLUMN IF NOT EXISTS criado_em TIMESTAMP;'))
+            conn.commit()
         LOG.info("Tabelas verificadas/criadas com sucesso.")
     except Exception as e:
         LOG.error(f"Erro ao criar tabelas: {e}")
@@ -106,15 +107,15 @@ def obter_saldo(user_id):
         session.close()
 
 
-# --- Funções de Estoque e Cadastro Admin ---
-def adicionar_estoque_item(categoria, conteudo, sub_tipo=None, bin_v=None, banco=None):
+# FUNÇÃO CORRIGIDA COM O PARÂMETRO 'bin' ADICIONADO:
+def adicionar_estoque_item(categoria, conteudo, sub_tipo=None, bin=None, banco=None):
     session = SessionLocal()
     try:
         item = EstoqueGeral(
             categoria=categoria,
             sub_tipo=sub_tipo,
             conteudo=conteudo,
-            bin=bin_v,
+            bin=bin,
             banco=banco,
             vendido=0
         )
@@ -141,7 +142,6 @@ def adicionar_dado_titular(dado):
 
 
 def listar_estoque_gg_agrupado():
-    """Retorna BIN, Banco e Quantidade Disponível para exibir no formato solicitado"""
     session = SessionLocal()
     try:
         results = (
@@ -193,7 +193,6 @@ def realizar_compra_item(user_id, categoria, preco, sub_tipo=None, bin_v=None):
         item.vendido = 1
         conteudo_final = item.conteudo
 
-        # Se for GG, busca um dado de titular não usado e entrega junto!
         if categoria == 'gg':
             dado_titular = session.query(DadosTitularGG).filter_by(usado=0).first()
             if dado_titular:
