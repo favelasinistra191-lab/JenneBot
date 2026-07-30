@@ -23,7 +23,8 @@ LOG = logging.getLogger("JenneStoreBot")
 
 # --- Inicialização ---
 bot = telebot.TeleBot(config.TOKEN)
-# db.criar_tabelas()
+db.criar_tabelas()
+
 
 
 # --- Servidor Web para Health Check e Keep-Alive ---
