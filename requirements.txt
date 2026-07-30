@@ -1,7 +1,8 @@
-pyTelegramBotAPI
+telebot
 flask
 requests
 sqlalchemy
 psycopg2-binary
+pyTelegramBotAPI
 python-dotenv
 cryptography
