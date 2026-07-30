@@ -56,7 +56,6 @@ def criar_tabelas():
         salvar_dados(dados)
     print("Banco de dados via GitHub configurado com sucesso!")
 
-# --- FUNÇÕES DE COMPATIBILIDADE COM O BOT ---
 def garantir_usuario(user_id, nome, username):
     dados = carregar_dados()
     usuarios = dados.get("usuarios", [])
@@ -85,7 +84,7 @@ def obter_dados_relatorio():
     dados = carregar_dados()
     clientes = len(dados.get("usuarios", []))
     vendas = len([e for e in dados.get("estoque", []) if e.get("vendido") == 1])
-    faturamento = sum([12.0 for e in dados.get("estoque", []) if e.get("vendido") == 1]) # Exemplo estimado
+    faturamento = sum([12.0 for e in dados.get("estoque", []) if e.get("vendido") == 1])
     return vendas, faturamento, clientes
 
 def adicionar_estoque_item(categoria, conteudo, bin="000000", banco="GERAL", bandeira="GERAL"):
@@ -138,20 +137,15 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     estoque = dados.get("estoque", [])
     titulares = dados.get("dados_titular", [])
     
-    # Achar usuário
     user = None
     for u in usuarios:
         if u["user_id"] == user_id:
             user = u
             break
             
-    if not user:
+    if not user or user.get("saldo", 0.0) < preco:
         return "saldo_insuficiente", None, None, None, None
         
-    if user.get("saldo", 0.0) < preco:
-        return "saldo_insuficiente", None, None, None, None
-        
-    # Achar item no estoque
     item_escolhido = None
     for item in estoque:
         if item.get("categoria") == categoria and item.get("vendido") == 0:
@@ -163,7 +157,6 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     if not item_escolhido:
         return "esgotado", None, None, None, None
         
-    # Achar titular livre (se for GG)
     titular_escolhido = None
     if categoria == "gg":
         for t in titulares:
@@ -173,7 +166,6 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
         if not titular_escolhido:
             return "falta_dados", None, None, None, None
 
-    # Efetivar a compra
     user["saldo"] -= preco
     item_escolhido["vendido"] = 1
     
