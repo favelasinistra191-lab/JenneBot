@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Blindada e Definitiva
+Versão Corrigida e Blindada para Render
 """
 import os
 import logging
@@ -130,7 +130,6 @@ def cmd_add_gg_etapa1(message):
     
     bandeira, banco = consultar_bin(bin6)
     
-    # Salva no estado do admin a BIN, o banco e a bandeira obtidos
     ADMIN_ESTADO[message.from_user.id] = {
         "bin": bin6,
         "banco": banco,
@@ -151,7 +150,7 @@ def cmd_add_gg_etapa1(message):
 @bot.message_handler(func=lambda message: message.from_user.id in ADMIN_ESTADO and not message.text.startswith('/'))
 def cmd_add_gg_etapa2(message):
     admin_id = message.from_user.id
-dados_bin = ADMIN_ESTADO.pop(admin_id, None)
+    dados_bin = ADMIN_ESTADO.pop(admin_id, None)
     if not dados_bin:
         return
 
@@ -205,8 +204,12 @@ def cmd_add_dados(message):
         bot.reply_to(message, "⚠️ Envie a lista de dados dos titulares logo abaixo.", parse_mode="Markdown")
         return
     linhas = texto_completo.replace('\r\n', '\n').split('\n')
-    adicionados = sum(1 for linha in linhas if linha.strip() and not db.adicionar_dado_titular(linha.strip()))
-    bot.reply_to(message, f"✅ Sucesso! Cadastrados dados de titulares.", parse_mode="Markdown")
+    adicionados = 0
+    for linha in linhas:
+        if linha.strip():
+            db.adicionar_dado_titular(linha.strip())
+            adicionados += 1
+    bot.reply_to(message, f"✅ Sucesso! Cadastrados {adicionados} dados de titulares.", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['limpar_estoque'])
@@ -215,6 +218,7 @@ def cmd_limpar_estoque(message):
         return
     session = db.SessionLocal()
     try:
+        from sqlalchemy import text
         session.execute(text("DELETE FROM estoque WHERE vendido = 0"))
         session.execute(text("DELETE FROM dados_titular WHERE usado = 0"))
         session.commit()
@@ -242,6 +246,7 @@ def cmd_gerar_gift(message):
     codigo_gift = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
     session = db.SessionLocal()
     try:
+        from sqlalchemy import text
         session.execute(text("INSERT INTO gift_cards (codigo, valor, usado) VALUES (:c, :v, 0)"), {"c": codigo_gift, "v": valor})
         session.commit()
         bot.reply_to(message, f"🎁 **Gift Gerado!**\nValor: R$ {valor:.2f}\nCódigo: `{codigo_gift}`", parse_mode="Markdown")
@@ -262,6 +267,7 @@ def cmd_resgatar(message):
     codigo = args[1].strip()
     session = db.SessionLocal()
     try:
+        from sqlalchemy import text
         res = session.execute(text("SELECT id, valor, usado FROM gift_cards WHERE codigo = :c"), {"c": codigo}).fetchone()
         if not res or res[2] == 1:
             bot.reply_to(message, "❌ Gift inválido ou já utilizado.")
