@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 146.0
+            "saldo": 142.0
         },
         {
             "user_id": 7162864988,
@@ -2447,7 +2447,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 270,
@@ -3400,7 +3400,7 @@
         {
             "id": 2,
             "conteudo": "NELSON NICOLAS ELIAS RODRIGUES|147.711.684-23",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 3,
