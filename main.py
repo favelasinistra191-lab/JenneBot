@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Robusta, Otimizada e Corrigida para /add_gg.
+Versão Definitiva - Leitor Universal de Lotes /add_gg
 """
 import os
 import logging
@@ -40,7 +40,6 @@ def consultar_bin(bin6):
     if len(bin6) < 6:
         return "OUTRA", "BANCO DESCONHECIDO"
     
-    # Identifica a Bandeira automaticamente pelos primeiros dígitos
     primeiro_digito = bin6[0]
     if primeiro_digito == '4':
         bandeira = "VISA"
@@ -53,7 +52,6 @@ def consultar_bin(bin6):
     else:
         bandeira = "OUTRA"
 
-    # Consulta o Banco na API (Apenas uma vez)
     banco = "BANCO NÃO IDENTIFICADO"
     try:
         response = requests.get(f"https://lookup.binlist.net/{bin6}", timeout=2, headers={'Accept-Version': '3'})
@@ -94,7 +92,6 @@ def main_menu(user_id):
     return text, markup
 
 
-# --- Handlers ---
 @bot.message_handler(commands=['start'])
 def cmd_start(message):
     try:
@@ -132,49 +129,75 @@ def cmd_admin(message):
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
 
-# --- COMANDO /ADD_GG CORRIGIDO E ROBUSTO ---
+# --- COMANDO /ADD_GG ROBUSTO E FLEXÍVEL ---
 @bot.message_handler(commands=['add_gg'])
 def cmd_add_gg(message):
     if message.from_user.id != config.ADMIN_ID:
         bot.reply_to(message, "❌ Acesso negado.")
         return
     
-    texto_original = message.text.replace('/add_gg', '', 1).strip()
-    if not texto_original:
-        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg 422061`\n*(Cole a lista de cartões logo abaixo na mensagem)*", parse_mode="Markdown")
+    # Pega todo o texto após o comando /add_gg
+    texto_bruto = message.text.replace('/add_gg', '', 1).strip()
+    if not texto_bruto:
+        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg 422061`\n*(Cole a lista de cartões logo abaixo)*", parse_mode="Markdown")
         return
     
-    linhas = texto_original.split('\n')
-    primeira_linha_args = linhas[0].strip().split()
+    # Normaliza quebras de linha independentemente de como o Telegram enviou
+    linhas = texto_bruto.replace('\r\n', '\n').split('\n')
     
-    bin_informada = "".join(filter(str.isdigit, primeira_linha_args[0])) if primeira_linha_args else ""
-    
-    if len(bin_informada) < 6:
-        bot.reply_to(message, "❌ Informe uma BIN válida de 6 dígitos (Ex: `/add_gg 422061`).", parse_mode="Markdown")
+    # A primeira palavra da primeira linha deve conter a BIN ou o primeiro cartão
+    primeira_linha_palavras = linhas[0].strip().split()
+    if not primeira_linha_palavras:
+        bot.reply_to(message, "❌ Formato inválido.", parse_mode="Markdown")
         return
-    
-    bin6 = bin_informada[:6]
-    
-    if len(primeira_linha_args) > 1:
-        linhas_cartoes = [primeira_linha_args[1]] + linhas[1:]
+
+    # Extrai a BIN (seja informada sozinha ou direto no primeiro cartão)
+    possivel_bin = "".join(filter(str.isdigit, primeira_linha_palavras[0]))
+    if len(possivel_bin) >= 6:
+        bin6 = possivel_bin[:6]
     else:
-        linhas_cartoes = linhas[1:]
+        bot.reply_to(message, "❌ Informe uma BIN válida de 6 dígitos.", parse_mode="Markdown")
+        return
+
+    # Coleta todos os itens válidos do lote
+    cartoes_para_adicionar = []
+    
+    # Se houver mais palavras na primeira linha além da BIN pura, avalia se é um cartão
+    if len(primeira_linha_palavras) > 1 and '|' in primeira_linha_palavras[1]:
+        cartoes_para_adicionar.append(primeira_linha_palavras[1])
+        
+    # Varre o restante das linhas coletando tudo o que tiver pipe '|' (formato de cartão)
+    for linha in linhas[1:]:
+        linha = linha.strip()
+        if not linha or linha.startswith('/'):
+            continue
+        if '|' in linha:
+            cartoes_para_adicionar.append(linha)
+        else:
+            # Caso o usuário tenha colado cartões separados por espaço na mesma linha
+            partes = linha.split()
+            for p in partes:
+                if '|' in p:
+                    cartoes_para_adicionar.append(p)
+
+    if not cartoes_para_adicionar:
+        # Se mandou apenas a BIN, tenta pegar qualquer linha que pareça dado de cartão
+        for linha in linhas[1:]:
+            linha = linha.strip()
+            if len(linha) > 10 and not linha.startswith('/'):
+                cartoes_para_adicionar.append(linha)
+
+    if not cartoes_para_adicionar:
+        bot.reply_to(message, "❌ Nenhum cartão válido encontrado. Certifique-se de usar o formato `num|mes|ano|cvv`.", parse_mode="Markdown")
+        return
 
     # Consulta a API APENAS UMA VEZ para o lote inteiro
     bandeira, banco = consultar_bin(bin6)
 
     adicionados = 0
-    for linha in linhas_cartoes:
-        linha = linha.strip()
-        if not linha or linha == bin6 or linha.startswith('/add_gg'):
-            continue
-            
-        db.adicionar_estoque_item(categoria='gg', conteudo=linha, bin=bin6, banco=banco, bandeira=bandeira)
+    for item in cartoes_para_adicionar:
+        db.adicionar_estoque_item(categoria='gg', conteudo=item, bin=bin6, banco=banco, bandeira=bandeira)
         adicionados += 1
-
-    if adicionados == 0:
-        bot.reply_to(message, "❌ Nenhum cartão válido encontrado para adicionar.", parse_mode="Markdown")
-        return
 
     relatorio = (
         f"✅ **Lote Adicionado com Sucesso!**\n\n"
@@ -196,7 +219,7 @@ def cmd_add_dados(message):
         bot.reply_to(message, "⚠️ Envie a lista de dados dos titulares logo abaixo.", parse_mode="Markdown")
         return
     
-    linhas = texto_completo.split('\n')
+    linhas = texto_completo.replace('\r\n', '\n').split('\n')
     adicionados = 0
     for linha in linhas:
         linha = linha.strip()
@@ -313,7 +336,6 @@ def cmd_dar_saldo(message):
         bot.reply_to(message, f"❌ Erro: {e}")
 
 
-# --- Callbacks e Compra Casada Profissional ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     user_id = call.from_user.id
@@ -390,7 +412,6 @@ def callback_query(call):
         bot.answer_callback_query(call.id, text="Seção indisponível.")
 
 
-# --- Execução Principal com Threading Robusta ---
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     LOG.info("Iniciando bot em modo polling seguro e multi-thread...")
@@ -403,3 +424,4 @@ if __name__ == "__main__":
             LOG.error(f"Erro na conexão do bot: {e}")
             import time
             time.sleep(3)
+ 
