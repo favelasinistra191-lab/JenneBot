@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Corrigida e Blindada para Render
+Versão Definitiva Completa: 2 Etapas (GG e Streaming) + eSIM Direto + Painel Blindado
 """
 import os
 import logging
@@ -109,13 +109,21 @@ def cmd_admin(message):
     texto = (
         f"👑 **Painel Administrativo • JenneStore**\n\n"
         f"📊 Clientes: `{clientes}` | Vendas: `{total_vendas}` | Faturamento: `R$ {faturamento:.2f}`\n\n"
-        f"⚙️ **Comando de Estoque:**\n"
-        f"• Digite `/add_gg 422061` e depois mande só a lista."
+        f"⚙️ **Comandos de Abastecimento (2 Etapas):**\n"
+        f"• `/add_gg [BIN]` (Ex: `/add_gg 422061`)\n"
+        f"• `/add_streaming [Nome]` (Ex: `/add_streaming NETFLIX`)\n\n"
+        f"⚙️ **Comandos Diretos:**\n"
+        f"• `/add_esim [codigo]`\n"
+        f"• `/add_dados [lista]` (Titulares em massa)\n"
+        f"• `/limpar_estoque`\n"
+        f"• `/gerar_gift [valor]`"
     )
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
 
-# ETAPA 1: DIGITA O COMANDO E A BIN
+# ==========================================
+# SISTEMA DE ABASTECIMENTO EM 2 ETAPAS (GG)
+# ==========================================
 @bot.message_handler(commands=['add_gg'])
 def cmd_add_gg_etapa1(message):
     if message.from_user.id != config.ADMIN_ID:
@@ -129,79 +137,115 @@ def cmd_add_gg_etapa1(message):
         return
     
     bandeira, banco = consultar_bin(bin6)
-    
     ADMIN_ESTADO[message.from_user.id] = {
+        "tipo": "gg",
         "bin": bin6,
         "banco": banco,
         "bandeira": bandeira
     }
 
-    texto_resposta = (
-        f"🔍 **BIN Registrada!**\n\n"
-        f"💳 **BIN:** `{bin6}`\n"
-        f"🏷️ **Bandeira:** `{bandeira}`\n"
-        f"🏦 **Banco:** `{banco}`\n\n"
-        f"👇 **AGORA MANDE APENAS A LISTA DE CARTÕES** (Sem digitar comandos, só cole a lista abaixo)."
-    )
-    bot.reply_to(message, texto_resposta, parse_mode="Markdown")
-
-
-# ETAPA 2: RECEBE APENAS A LISTA (SEM COMANDOS)
-@bot.message_handler(func=lambda message: message.from_user.id in ADMIN_ESTADO and not message.text.startswith('/'))
-def cmd_add_gg_etapa2(message):
-    admin_id = message.from_user.id
-    dados_bin = ADMIN_ESTADO.pop(admin_id, None)
-    if not dados_bin:
-        return
-
-    bin6 = dados_bin["bin"]
-    banco = dados_bin["banco"]
-    bandeira = dados_bin["bandeira"]
-
-    texto_bruto = message.text.strip()
-    linhas = texto_bruto.replace('\r\n', '\n').split('\n')
-    
-    cartoes_para_adicionar = []
-    for linha in linhas:
-        linha = linha.strip()
-        if not linha:
-            continue
-        for parte in linha.split():
-            if '|' in parte:
-                cartoes_para_adicionar.append(parte.strip())
-
-    if not cartoes_para_adicionar:
-        for linha in linhas:
-            linha = linha.strip()
-            if len(linha) > 10:
-                cartoes_para_adicionar.append(linha)
-
-    if not cartoes_para_adicionar:
-        bot.reply_to(message, "❌ Nenhum cartão válido encontrado com pipe `|`. Envie novamente a lista correta.")
-        return
-
-    adicionados = 0
-    for item in cartoes_para_adicionar:
-        db.adicionar_estoque_item(categoria='gg', conteudo=item, bin=bin6, banco=banco, bandeira=bandeira)
-        adicionados += 1
-
     bot.reply_to(
         message, 
-        f"✅ **Estoque Atualizado com Sucesso!**\n\n"
-        f"💳 **BIN:** `{bin6}`\n"
-        f"📦 **Adicionados:** `+{adicionados} Uni.`\n"
-        f"🔄 *Os itens foram somados perfeitamente no menu de vendas!*", 
+        f"🔍 **BIN Registrada!**\n\n"
+        f"💳 **BIN:** `{bin6}` | **Bandeira:** `{bandeira}` | **Banco:** `{banco}`\n\n"
+        f"👇 **AGORA MANDE APENAS A LISTA DE CARTÕES** (cole direto abaixo sem comandos).", 
         parse_mode="Markdown"
     )
 
 
+# ==========================================
+# SISTEMA DE ABASTECIMENTO EM 2 ETAPAS (STREAMING)
+# ==========================================
+@bot.message_handler(commands=['add_streaming'])
+def cmd_add_streaming_etapa1(message):
+    if message.from_user.id != config.ADMIN_ID:
+        return
+    
+    nome_streaming = message.text.replace('/add_streaming', '').strip().upper()
+    if not nome_streaming:
+        bot.reply_to(message, "⚠️ Informe o nome. Ex: `/add_streaming NETFLIX`", parse_mode="Markdown")
+        return
+    
+    ADMIN_ESTADO[message.from_user.id] = {
+        "tipo": "streaming",
+        "nome_streaming": nome_streaming
+    }
+
+    bot.reply_to(
+        message, 
+        f"🎬 **Streaming Configurado: `{nome_streaming}`**\n\n"
+        f"👇 **AGORA MANDE APENAS A LISTA DE CONTAS** (uma por linha ou juntas, cole direto abaixo).", 
+        parse_mode="Markdown"
+    )
+
+
+# ==========================================
+# OUVINTE ÚNICO PARA A ETAPA 2 (GG OU STREAMING)
+# ==========================================
+@bot.message_handler(func=lambda message: message.from_user.id in ADMIN_ESTADO and not message.text.startswith('/'))
+def processar_etapa2(message):
+    admin_id = message.from_user.id
+    estado = ADMIN_ESTADO.pop(admin_id, None)
+    if not estado:
+        return
+
+    tipo = estado.get("tipo")
+    texto_bruto = message.text.strip()
+    linhas = texto_bruto.replace('\r\n', '\n').split('\n')
+    
+    if tipo == "gg":
+        bin6 = estado["bin"]
+        banco = estado["banco"]
+        bandeira = estado["bandeira"]
+        
+        cartoes = []
+        for linha in linhas:
+            linha = linha.strip()
+            if not linha:
+                continue
+            for parte in linha.split():
+                if '|' in parte:
+                    cartoes.append(parte.strip())
+        if not cartoes:
+            for linha in linhas:
+                if len(linha.strip()) > 10:
+                    cartoes.append(linha.strip())
+
+        if not cartoes:
+            bot.reply_to(message, "❌ Nenhum cartão válido encontrado. Envie novamente.")
+            return
+
+        adicionados = 0
+        for item in cartoes:
+            db.adicionar_estoque_item(categoria='gg', conteudo=item, bin=bin6, banco=banco, bandeira=bandeira)
+            adicionados += 1
+
+        bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n💳 **BIN:** `{bin6}`\n📦 **Adicionados:** `+{adicionados} GGs`", parse_mode="Markdown")
+
+    elif tipo == "streaming":
+        nome_streaming = estado["nome_streaming"]
+        
+        contas = [l.strip() for l in linhas if l.strip()]
+        if not contas:
+            bot.reply_to(message, "❌ Nenhuma conta válida encontrada. Envie novamente.")
+            return
+
+        adicionados = 0
+        for conta in contas:
+            db.adicionar_estoque_item(categoria='streaming', conteudo=conta, bin='000000', banco='GERAL', bandeira=nome_streaming)
+            adicionados += 1
+
+        bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n🎬 **Streaming:** `{nome_streaming}`\n📦 **Adicionadas:** `+{adicionados} Contas`", parse_mode="Markdown")
+
+
+# --- OUTROS COMANDOS DIRETOS (DADOS E ESIM) ---
 @bot.message_handler(commands=['add_dados'])
 def cmd_add_dados(message):
     if message.from_user.id != config.ADMIN_ID:
         return
     texto_completo = message.text.replace('/add_dados', '').strip()
     if not texto_completo:
-        bot.reply_to(message, "⚠️ Envie a lista de dados dos titulares logo abaixo.", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Envie a lista de dados dos titulares logo após o comando.", parse_mode="Markdown")
         return
     linhas = texto_completo.replace('\r\n', '\n').split('\n')
     adicionados = 0
@@ -209,7 +253,19 @@ def cmd_add_dados(message):
         if linha.strip():
             db.adicionar_dado_titular(linha.strip())
             adicionados += 1
-    bot.reply_to(message, f"✅ Sucesso! Cadastrados {adicionados} dados de titulares.", parse_mode="Markdown")
+    bot.reply_to(message, f"✅ Sucesso! Cadastrados `{adicionados}` dados de titulares.", parse_mode="Markdown")
+
+
+@bot.message_handler(commands=['add_esim'])
+def cmd_add_esim(message):
+    if message.from_user.id != config.ADMIN_ID:
+        return
+    conteudo = message.text.replace('/add_esim', '').strip()
+    if not conteudo:
+        bot.reply_to(message, "⚠️ Informe o eSIM. Ex: `/add_esim LPA:1$SMDP...`", parse_mode="Markdown")
+        return
+    db.adicionar_estoque_item(categoria='esim', conteudo=conteudo, bin='000000', banco='GERAL', bandeira='ESIM')
+    bot.reply_to(message, "✅ eSIM adicionado com sucesso!", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=['limpar_estoque'])
@@ -284,6 +340,7 @@ def cmd_resgatar(message):
         session.close()
 
 
+# --- CALLBACKS DO CLIENTE ---
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     user_id = call.from_user.id
@@ -302,6 +359,93 @@ def callback_query(call):
         bot.answer_callback_query(call.id)
         bot.send_message(call.message.chat.id, "🎁 Para adicionar saldo, envie:\n`/resgatar [seu_codigo]`", parse_mode="Markdown")
         
+    elif data == "cat_streaming":
+        bot.answer_callback_query(call.id)
+        conn = db.sqlite3.connect(db.DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT bandeira, COUNT(*) FROM estoque WHERE categoria = 'streaming' AND vendido = 0 GROUP BY bandeira")
+        rows = cursor.fetchall()
+        conn.close()
+        
+        if not rows:
+            bot.send_message(call.message.chat.id, "❌ Nenhuma conta de Streaming disponível no momento.")
+            return
+            
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        for nome_streaming, total_qtd in rows:
+            markup.add(types.InlineKeyboardButton(f"🎬 {nome_streaming} • Estoque: {total_qtd}", callback_data=f"comprar_stream_{nome_streaming}"))
+        markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
+        bot.send_message(call.message.chat.id, "🛒 **Selecione a Streaming Desejada:**", reply_markup=markup, parse_mode="Markdown")
+
+    elif data.startswith("comprar_stream_"):
+        nome_streaming = data.replace("comprar_stream_", "")
+        bot.answer_callback_query(call.id)
+        
+        preco = 15.0
+        conn = db.sqlite3.connect(db.DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT saldo FROM usuarios WHERE user_id = ?", (user_id,))
+        saldo = cursor.fetchone()[0]
+        if saldo < preco:
+            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
+            conn.close()
+            return
+            
+        cursor.execute("SELECT id, conteudo FROM estoque WHERE categoria = 'streaming' AND bandeira = ? AND vendido = 0 LIMIT 1", (nome_streaming,))
+        item = cursor.fetchone()
+        if not item:
+            bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta conta.")
+            conn.close()
+            return
+            
+        item_id, conteudo_conta = item[0], item[1]
+        cursor.execute("UPDATE usuarios SET saldo = saldo - ? WHERE user_id = ?", (preco, user_id))
+        cursor.execute("UPDATE estoque SET vendido = 1 WHERE id = ?", (item_id,))
+        conn.commit()
+        conn.close()
+        
+        bot.send_message(call.message.chat.id, f"✅ **COMPRA APROVADA!**\n\n🎬 **Serviço:** `{nome_streaming}`\n🔑 **Conta:** `{conteudo_conta}`", parse_mode="Markdown")
+
+    elif data == "cat_esim":
+        bot.answer_callback_query(call.id)
+        conn = db.sqlite3.connect(db.DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM estoque WHERE categoria = 'esim' AND vendido = 0 LIMIT 5")
+        rows = cursor.fetchall()
+        conn.close()
+        if not rows:
+            bot.send_message(call.message.chat.id, "❌ Nenhum eSIM disponível no momento.")
+            return
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        for item_id, in rows:
+            markup.add(types.InlineKeyboardButton(f"📱 Comprar eSIM Global (R$ 30.00)", callback_data=f"compras_esim_{item_id}"))
+        markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
+        bot.send_message(call.message.chat.id, "📱 **eSIM Globais Disponíveis:**", reply_markup=markup, parse_mode="Markdown")
+
+    elif data.startswith("compras_esim_"):
+        item_id = int(data.split("_")[2])
+        bot.answer_callback_query(call.id)
+        conn = db.sqlite3.connect(db.DB_NAME)
+        cursor = conn.cursor()
+        cursor.execute("SELECT saldo FROM usuarios WHERE user_id = ?", (user_id,))
+        saldo = cursor.fetchone()[0]
+        preco = 30.0
+        if saldo < preco:
+            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
+            conn.close()
+            return
+        cursor.execute("SELECT conteudo FROM estoque WHERE id = ? AND vendido = 0", (item_id,))
+        item = cursor.fetchone()
+        if not item:
+            bot.send_message(call.message.chat.id, "❌ Item esgotado.")
+            conn.close()
+            return
+        cursor.execute("UPDATE usuarios SET saldo = saldo - ? WHERE user_id = ?", (preco, user_id))
+        cursor.execute("UPDATE estoque SET vendido = 1 WHERE id = ?", (item_id,))
+        conn.commit()
+        conn.close()
+        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido!**\n\nDados: `{item[0]}`", parse_mode="Markdown")
+
     elif data == "menu_gg":
         bot.answer_callback_query(call.id)
         ggs = db.listar_estoque_gg_agrupado()
@@ -310,8 +454,8 @@ def callback_query(call):
             return
         
         markup = types.InlineKeyboardMarkup(row_width=1)
-        for bin_code, banco, bandeira, total_qtd in ggs:
-            texto_btn = f"💳 {bandeira} | {banco} ({bin_code}) • Estoque: {total_qtd}"
+        for bin_code, bandeira, total_qtd in ggs:
+            texto_btn = f"💳 {bandeira} ({bin_code}) • Estoque: {total_qtd}"
             markup.add(types.InlineKeyboardButton(texto_btn, callback_data=f"comprar_gg_{bin_code}"))
         
         markup.add(types.InlineKeyboardButton("🔙 Voltar ao Menu", callback_data="voltar_menu"))
@@ -327,7 +471,7 @@ def callback_query(call):
             msg = (
                 f"✅ **PEDIDO APROVADO!**\n\n"
                 f"💳 **CARTÃO:** `{res_gg}`\n"
-                f"🏷️ **Bandeira/Banco:** {bandeira_item} | {banco_item}\n"
+                f"🏷️ **Bandeira:** `{bandeira_item}`\n"
                 f"━━━━━━━━━━━━━━━━━━━━━━\n"
                 f"👤 **TITULAR:**\n`{res_dados}`"
             )
@@ -347,12 +491,17 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando...")
-    bot.remove_webhook()
+    LOG.info("Bot rodando com proteção contra conflito (409)...")
+    
+    try:
+        bot.remove_webhook()
+    except Exception:
+        pass
+
     while True:
         try:
-            bot.polling(none_stop=True, interval=0, timeout=30)
+            bot.polling(none_stop=True, interval=0, timeout=30, long_polling_timeout=30)
         except Exception as e:
-            LOG.error(f"Erro: {e}")
+            LOG.error(f"Erro na conexão: {e}")
             import time
-            time.sleep(3)
+            time.sleep(5)
