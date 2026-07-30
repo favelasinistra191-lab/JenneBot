@@ -92,7 +92,6 @@ def adicionar_dado_titular(conteudo):
 def listar_estoque_gg_agrupado():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
-    # Agrupa apenas por BIN e Bandeira para exibir de forma limpa no painel
     cursor.execute("""
         SELECT bin, bandeira, COUNT(*) 
         FROM estoque 
@@ -113,7 +112,6 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v):
         conn.close()
         return "saldo_insuficiente", None, None, None, None
         
-    # Busca estritamente pela BIN para garantir zero erros na hora da venda
     cursor.execute("SELECT id, conteudo, banco, bandeira FROM estoque WHERE categoria = ? AND bin = ? AND vendido = 0 LIMIT 1", (categoria, bin_v))
     res_item = cursor.fetchone()
     if not res_item:
@@ -147,7 +145,8 @@ def obter_dados_relatorio():
     cursor = conn.cursor()
     cursor.execute("SELECT COUNT(*) FROM estoque WHERE vendido = 1")
     total_vendas = cursor.fetchone()[0]
-    faturamento = total_vendas * 20.0
+    # Faturamento baseado na média dos novos preços para estimativa do painel admin
+    faturamento = total_vendas * 10.0
     cursor.execute("SELECT COUNT(*) FROM usuarios")
     clientes = cursor.fetchone()[0]
     conn.close()
