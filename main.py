@@ -186,7 +186,6 @@ def processar_etapa2(message):
     if not pendente or pendente.get("admin_id") != message.from_user.id:
         return
 
-    # Limpa o pendente para processar apenas uma vez
     dados["admin_pendente"] = {}
     db.salvar_dados(dados)
 
@@ -273,7 +272,7 @@ def cmd_limpar_estoque(message):
         return
     try:
         dados = db.carregar_dados()
-        dados["estoque"] = [e for e in dados.get("estoque", []) if e.get("vendido"] == 1]
+        dados["estoque"] = [e for e in dados.get("estoque", []) if e.get("vendido") == 1]
         dados["dados_titular"] = [t for t in dados.get("dados_titular", []) if t.get("usado") == 1]
         db.salvar_dados(dados)
         bot.reply_to(message, "🧹 **Estoque não vendido limpo com sucesso!**", parse_mode="Markdown")
@@ -491,7 +490,7 @@ def callback_query(call):
         item_alvo["vendido"] = 1
         db.salvar_dados(dados)
         
-        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido com Sucesso!**\n\n📱 **Dados de Ativação:**\n`{item_alvo.get('conteudo')}`\n⏱️ *⏱️ Você tem 10 minutos para troca em caso de problemas.*", parse_mode="Markdown")
+        bot.send_message(call.message.chat.id, f"✅ **eSIM Adquirido com Sucesso!**\n\n📱 **Dados de Ativação:**\n`{item_alvo.get('conteudo')}`\n⏱️ *Você tem 10 minutos para troca em caso de problemas.*", parse_mode="Markdown")
 
     elif data == "menu_gg":
         bot.answer_callback_query(call.id)
