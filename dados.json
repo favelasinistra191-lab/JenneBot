@@ -8,5 +8,12 @@
         }
     ],
     "produtos": [],
-    "vendas": []
+    "vendas": [],
+    "gift_cards": [
+        {
+            "codigo": "GIFT-6B07CD04",
+            "valor": 100.0,
+            "usado": 0
+        }
+    ]
 }
