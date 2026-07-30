@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Robusta, Otimizada e Anti-Travamento.
+Versão Robusta, Otimizada e Corrigida para /add_gg.
 """
 import os
 import logging
@@ -132,19 +132,21 @@ def cmd_admin(message):
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
 
-# --- COMANDO /ADD_GG ULTRA RÁPIDO (CONSULTA ÚNICA) ---
+# --- COMANDO /ADD_GG CORRIGIDO E ROBUSTO ---
 @bot.message_handler(commands=['add_gg'])
 def cmd_add_gg(message):
     if message.from_user.id != config.ADMIN_ID:
+        bot.reply_to(message, "❌ Acesso negado.")
         return
     
-    texto_original = message.text.replace('/add_gg', '').strip()
+    texto_original = message.text.replace('/add_gg', '', 1).strip()
     if not texto_original:
-        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg 422061`\n*(Cole a lista de cartões logo abaixo)*", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Uso correto:\n`/add_gg 422061`\n*(Cole a lista de cartões logo abaixo na mensagem)*", parse_mode="Markdown")
         return
     
     linhas = texto_original.split('\n')
     primeira_linha_args = linhas[0].strip().split()
+    
     bin_informada = "".join(filter(str.isdigit, primeira_linha_args[0])) if primeira_linha_args else ""
     
     if len(bin_informada) < 6:
@@ -153,10 +155,10 @@ def cmd_add_gg(message):
     
     bin6 = bin_informada[:6]
     
-    if len(primeira_linha_args) == 1 and len(linhas) > 1:
-        linhas_cartoes = linhas[1:]
+    if len(primeira_linha_args) > 1:
+        linhas_cartoes = [primeira_linha_args[1]] + linhas[1:]
     else:
-        linhas_cartoes = linhas
+        linhas_cartoes = linhas[1:]
 
     # Consulta a API APENAS UMA VEZ para o lote inteiro
     bandeira, banco = consultar_bin(bin6)
@@ -164,14 +166,14 @@ def cmd_add_gg(message):
     adicionados = 0
     for linha in linhas_cartoes:
         linha = linha.strip()
-        if not linha or linha == bin6 or (len(linha) == 6 and linha.isdigit()):
+        if not linha or linha == bin6 or linha.startswith('/add_gg'):
             continue
             
         db.adicionar_estoque_item(categoria='gg', conteudo=linha, bin=bin6, banco=banco, bandeira=bandeira)
         adicionados += 1
 
     if adicionados == 0:
-        bot.reply_to(message, "❌ Nenhum cartão válido encontrado na lista.", parse_mode="Markdown")
+        bot.reply_to(message, "❌ Nenhum cartão válido encontrado para adicionar.", parse_mode="Markdown")
         return
 
     relatorio = (
@@ -394,7 +396,6 @@ if __name__ == "__main__":
     LOG.info("Iniciando bot em modo polling seguro e multi-thread...")
     bot.remove_webhook()
     
-    # Loop de polling protegido contra quedas de conexão
     while True:
         try:
             bot.polling(none_stop=True, interval=0, timeout=30, long_polling_timeout=30)
