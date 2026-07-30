@@ -92,11 +92,12 @@ def adicionar_dado_titular(conteudo):
 def listar_estoque_gg_agrupado():
     conn = sqlite3.connect(DB_NAME)
     cursor = conn.cursor()
+    # Agrupa apenas por BIN e Bandeira para exibir de forma limpa no painel
     cursor.execute("""
-        SELECT bin, banco, bandeira, COUNT(*) 
+        SELECT bin, bandeira, COUNT(*) 
         FROM estoque 
         WHERE categoria = 'gg' AND vendido = 0 
-        GROUP BY bin, banco, bandeira
+        GROUP BY bin, bandeira
     """)
     rows = cursor.fetchall()
     conn.close()
@@ -112,6 +113,7 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v):
         conn.close()
         return "saldo_insuficiente", None, None, None, None
         
+    # Busca estritamente pela BIN para garantir zero erros na hora da venda
     cursor.execute("SELECT id, conteudo, banco, bandeira FROM estoque WHERE categoria = ? AND bin = ? AND vendido = 0 LIMIT 1", (categoria, bin_v))
     res_item = cursor.fetchone()
     if not res_item:
@@ -150,7 +152,3 @@ def obter_dados_relatorio():
     clientes = cursor.fetchone()[0]
     conn.close()
     return total_vendas, faturamento, clientes
-
-from sqlalchemy import text
-class GiftCard:
-    pass
