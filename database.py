@@ -55,7 +55,7 @@ def salvar_dados(dados):
     content_encoded = base64.b64encode(json_str.encode("utf-8")).decode("utf-8")
 
     payload = {
-        "message": "Atualizando dados da loja via bot",
+        "message": "Atualizando dados da loja em lote via bot",
         "content": content_encoded,
         "branch": "main"
     }
@@ -101,33 +101,43 @@ def obter_dados_relatorio():
     faturamento = sum([12.0 for e in dados.get("estoque", []) if e.get("vendido") == 1])
     return vendas, faturamento, clientes
 
-def adicionar_estoque_item(categoria, conteudo, bin="000000", banco="GERAL", bandeira="GERAL"):
+def adicionar_lote_estoque(lista_itens, categoria, bin="000000", banco="GERAL", bandeira="GERAL"):
+    """Adiciona centenas de itens de uma só vez fazendo apenas 1 salvamento no GitHub"""
     dados = carregar_dados()
     estoque = dados.get("estoque", [])
     
     novo_id = max([e.get("id", 0) for e in estoque], default=0) + 1
-    estoque.append({
-        "id": novo_id,
-        "categoria": categoria,
-        "conteudo": conteudo,
-        "bin": bin,
-        "banco": banco,
-        "bandeira": bandeira,
-        "vendido": 0
-    })
+    
+    for conteudo in lista_itens:
+        estoque.append({
+            "id": novo_id,
+            "categoria": categoria,
+            "conteudo": conteudo,
+            "bin": bin,
+            "banco": banco,
+            "bandeira": bandeira,
+            "vendido": 0
+        })
+        novo_id += 1
+        
     dados["estoque"] = estoque
     salvar_dados(dados)
 
-def adicionar_dado_titular(conteudo):
+def adicionar_lote_dados_titular(lista_titulares):
+    """Adiciona lista de titulares de uma só vez"""
     dados = carregar_dados()
     titulares = dados.get("dados_titular", [])
     
     novo_id = max([t.get("id", 0) for t in titulares], default=0) + 1
-    titulares.append({
-        "id": novo_id,
-        "conteudo": conteudo,
-        "usado": 0
-    })
+    
+    for conteudo in lista_titulares:
+        titulares.append({
+            "id": novo_id,
+            "conteudo": conteudo,
+            "usado": 0
+        })
+        novo_id += 1
+        
     dados["dados_titular"] = titulares
     salvar_dados(dados)
 
