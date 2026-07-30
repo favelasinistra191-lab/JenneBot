@@ -1,21 +1,15 @@
 services:
   - type: web
-    name: jenne-bot
+    name: jennestorebot
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python main.py
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: jenne-db
-          property: connectionString
+        sync: false
       - key: TELEGRAM_TOKEN
         sync: false
       - key: ADMIN_ID
         sync: false
       - key: PIX_ESTATICO
         sync: false
-
-databases:
-  - name: jenne-db
-    plan: free
