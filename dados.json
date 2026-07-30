@@ -3312,11 +3312,7 @@
             "vendido": 0
         }
     ],
-    "admin_pendente": {
-        "admin_id": 8776521959,
-        "tipo": "streaming",
-        "nome_streaming": "DISNEY+"
-    },
+    "admin_pendente": {},
     "dados_titular": [
         {
             "id": 1,
