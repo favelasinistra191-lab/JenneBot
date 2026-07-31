@@ -25,6 +25,11 @@
             "codigo": "GIFT-DBA681CB",
             "valor": 50.0,
             "usado": 1
+        },
+        {
+            "codigo": "GIFT-3A47B1C1",
+            "valor": 200.0,
+            "usado": 0
         }
     ],
     "estoque": [
