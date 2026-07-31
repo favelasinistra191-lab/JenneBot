@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 164.0
+            "saldo": 160.0
         },
         {
             "user_id": 8694871225,
@@ -2217,7 +2217,7 @@
             "bin": "406669",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 242,
@@ -3497,7 +3497,7 @@
         {
             "id": 17,
             "conteudo": "CLÁUDIO RUAN FERNANDES|190.856.836-45",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 18,
