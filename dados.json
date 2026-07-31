@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 192.0
+            "saldo": 188.0
         }
     ],
     "produtos": [],
@@ -2346,7 +2346,7 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 257,
@@ -3456,7 +3456,7 @@
         {
             "id": 10,
             "conteudo": "LAÍS ANALU CAMPOS|076.411.858-78",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 11,
