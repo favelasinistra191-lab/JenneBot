@@ -47,6 +47,11 @@
             "codigo": "GIFT-95108EEC",
             "valor": 100.0,
             "usado": 0
+        },
+        {
+            "codigo": "GIFT-881A66F8",
+            "valor": 50.0,
+            "usado": 0
         }
     ],
     "estoque": [
