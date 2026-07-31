@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 196.0
+            "saldo": 192.0
         }
     ],
     "produtos": [],
@@ -2292,7 +2292,7 @@
             "bin": "491944",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 251,
@@ -3451,7 +3451,7 @@
         {
             "id": 9,
             "conteudo": "KAUÊ JULIO GUSTAVO ROCHA|062.523.341-70",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 10,
