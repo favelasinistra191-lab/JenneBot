@@ -30,6 +30,11 @@
             "codigo": "GIFT-3A47B1C1",
             "valor": 200.0,
             "usado": 0
+        },
+        {
+            "codigo": "GIFT-95108EEC",
+            "valor": 100.0,
+            "usado": 0
         }
     ],
     "estoque": [
