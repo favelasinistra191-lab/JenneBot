@@ -29,6 +29,12 @@
             "nome": "Nike",
             "username": "",
             "saldo": 0.0
+        },
+        {
+            "user_id": 6668745276,
+            "nome": "Suelly",
+            "username": "",
+            "saldo": 0.0
         }
     ],
     "produtos": [],
