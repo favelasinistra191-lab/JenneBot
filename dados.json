@@ -17,6 +17,12 @@
             "nome": "Matias",
             "username": "",
             "saldo": 180.0
+        },
+        {
+            "user_id": 8694871225,
+            "nome": "Lua ramos",
+            "username": "",
+            "saldo": 0.0
         }
     ],
     "produtos": [],
