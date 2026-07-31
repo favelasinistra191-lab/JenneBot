@@ -40,7 +40,7 @@
             "user_id": 7847826722,
             "nome": "Indio",
             "username": "",
-            "saldo": 50.0
+            "saldo": 46.0
         }
     ],
     "produtos": [],
@@ -162,7 +162,7 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 10,
@@ -3545,7 +3545,7 @@
         {
             "id": 20,
             "conteudo": "PEDRO ARTHUR THIAGO ASSIS|818.270.907-58",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 21,
