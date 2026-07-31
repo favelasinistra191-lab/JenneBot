@@ -23,6 +23,12 @@
             "nome": "Lua ramos",
             "username": "",
             "saldo": 0.0
+        },
+        {
+            "user_id": 8240840152,
+            "nome": "Nike",
+            "username": "",
+            "saldo": 0.0
         }
     ],
     "produtos": [],
