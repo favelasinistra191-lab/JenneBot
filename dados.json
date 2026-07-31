@@ -41,6 +41,12 @@
             "nome": "Indio",
             "username": "",
             "saldo": 38.0
+        },
+        {
+            "user_id": 6664117618,
+            "nome": "TF",
+            "username": "",
+            "saldo": 100.0
         }
     ],
     "produtos": [],
@@ -64,7 +70,7 @@
         {
             "codigo": "GIFT-95108EEC",
             "valor": 100.0,
-            "usado": 0
+            "usado": 1
         },
         {
             "codigo": "GIFT-881A66F8",
