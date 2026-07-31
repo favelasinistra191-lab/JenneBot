@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 0.0
+            "saldo": 200.0
         }
     ],
     "produtos": [],
@@ -35,7 +35,7 @@
         {
             "codigo": "GIFT-3A47B1C1",
             "valor": 200.0,
-            "usado": 0
+            "usado": 1
         },
         {
             "codigo": "GIFT-95108EEC",
