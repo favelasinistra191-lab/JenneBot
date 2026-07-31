@@ -40,7 +40,7 @@
             "user_id": 7847826722,
             "nome": "Indio",
             "username": "",
-            "saldo": 46.0
+            "saldo": 42.0
         }
     ],
     "produtos": [],
@@ -2268,7 +2268,7 @@
             "bin": "406669",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 244,
@@ -3550,7 +3550,7 @@
         {
             "id": 21,
             "conteudo": "HENRIQUE EDUARDO JOÃO DA MOTA|940.073.795-56",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 22,
