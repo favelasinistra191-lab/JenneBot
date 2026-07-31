@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 200.0
+            "saldo": 196.0
         }
     ],
     "produtos": [],
@@ -2283,7 +2283,7 @@
             "bin": "491944",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 250,
@@ -3446,7 +3446,7 @@
         {
             "id": 8,
             "conteudo": "LEONARDO MARCOS VINICIUS ANTONIO DA COSTA|171.553.517-09",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 9,
