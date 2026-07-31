@@ -35,6 +35,12 @@
             "nome": "Suelly",
             "username": "",
             "saldo": 0.0
+        },
+        {
+            "user_id": 7847826722,
+            "nome": "Indio",
+            "username": "",
+            "saldo": 50.0
         }
     ],
     "produtos": [],
@@ -73,7 +79,7 @@
         {
             "codigo": "GIFT-3867E775",
             "valor": 50.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
