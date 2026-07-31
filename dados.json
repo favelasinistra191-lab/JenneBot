@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 176.0
+            "saldo": 172.0
         },
         {
             "user_id": 8694871225,
@@ -111,7 +111,7 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 8,
@@ -3482,7 +3482,7 @@
         {
             "id": 14,
             "conteudo": "RAFAELA MARLENE PORTO|006.508.463-20",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 15,
