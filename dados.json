@@ -40,7 +40,7 @@
             "user_id": 7847826722,
             "nome": "Indio",
             "username": "",
-            "saldo": 42.0
+            "saldo": 38.0
         }
     ],
     "produtos": [],
@@ -2394,7 +2394,7 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 258,
@@ -3555,7 +3555,7 @@
         {
             "id": 22,
             "conteudo": "MANUEL BRUNO PEREIRA|745.406.420-57",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 23,
