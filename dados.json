@@ -52,7 +52,7 @@
             "user_id": 6025773056,
             "nome": "Arma",
             "username": "Armax771",
-            "saldo": 0.0
+            "saldo": 100.0
         }
     ],
     "produtos": [],
@@ -96,7 +96,7 @@
         {
             "codigo": "GIFT-DAFA4F78",
             "valor": 100.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
