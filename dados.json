@@ -47,6 +47,12 @@
             "nome": "TF",
             "username": "",
             "saldo": 100.0
+        },
+        {
+            "user_id": 6025773056,
+            "nome": "Arma",
+            "username": "Armax771",
+            "saldo": 0.0
         }
     ],
     "produtos": [],
