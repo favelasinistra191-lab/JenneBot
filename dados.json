@@ -86,6 +86,11 @@
             "codigo": "GIFT-3867E775",
             "valor": 50.0,
             "usado": 1
+        },
+        {
+            "codigo": "GIFT-DAFA4F78",
+            "valor": 100.0,
+            "usado": 0
         }
     ],
     "estoque": [
