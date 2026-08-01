@@ -3501,6 +3501,240 @@
             "banco": "BANCO BRADESCO S.A.",
             "bandeira": "VISA",
             "vendido": 0
+        },
+        {
+            "id": 379,
+            "categoria": "gg",
+            "conteudo": "4220619671142266|12|2032|908",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 380,
+            "categoria": "gg",
+            "conteudo": "4220619671558750|12|2032|397",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 381,
+            "categoria": "gg",
+            "conteudo": "4220619671070475|12|2032|897",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 382,
+            "categoria": "gg",
+            "conteudo": "4220619671324005|12|2032|545",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 383,
+            "categoria": "gg",
+            "conteudo": "4220619671315508|12|2032|852",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 384,
+            "categoria": "gg",
+            "conteudo": "4220619671083312|12|2032|921",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 385,
+            "categoria": "gg",
+            "conteudo": "4220619671882531|12|2032|760",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 386,
+            "categoria": "gg",
+            "conteudo": "4220619671466517|12|2032|606",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 387,
+            "categoria": "gg",
+            "conteudo": "4220619671207846|12|2032|695",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 388,
+            "categoria": "gg",
+            "conteudo": "4220619671646662|12|2032|135",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 389,
+            "categoria": "gg",
+            "conteudo": "4220619671727421|12|2032|990",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 390,
+            "categoria": "gg",
+            "conteudo": "4220619671765025|12|2032|331",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 391,
+            "categoria": "gg",
+            "conteudo": "4220619671414665|12|2032|914",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 392,
+            "categoria": "gg",
+            "conteudo": "4220619671333055|12|2032|278",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 393,
+            "categoria": "gg",
+            "conteudo": "4220619671623471|12|2032|261",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 394,
+            "categoria": "gg",
+            "conteudo": "4220619671570177|12|2032|770",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 395,
+            "categoria": "gg",
+            "conteudo": "4220619671215781|12|2032|632",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 396,
+            "categoria": "gg",
+            "conteudo": "4220619671603135|12|2032|399",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 397,
+            "categoria": "gg",
+            "conteudo": "4220619671033523|12|2032|805",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 398,
+            "categoria": "gg",
+            "conteudo": "4220619671784448|12|2032|599",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 399,
+            "categoria": "gg",
+            "conteudo": "4220619671252685|12|2032|255",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 400,
+            "categoria": "gg",
+            "conteudo": "4220619671417544|12|2032|939",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 401,
+            "categoria": "gg",
+            "conteudo": "4220619671651506|12|2032|314",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 402,
+            "categoria": "gg",
+            "conteudo": "4220619671668070|12|2032|014",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 403,
+            "categoria": "gg",
+            "conteudo": "4220619671533464|12|2032|846",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 404,
+            "categoria": "gg",
+            "conteudo": "4220619671172404|12|2032|646",
+            "bin": "422061",
+            "banco": "BANCO SANTANDER S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
         }
     ],
     "admin_pendente": {},
