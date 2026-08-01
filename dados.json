@@ -53,6 +53,12 @@
             "nome": "Arma",
             "username": "Armax771",
             "saldo": 100.0
+        },
+        {
+            "user_id": 7422490724,
+            "nome": "SUPREMO",
+            "username": "",
+            "saldo": 0.0
         }
     ],
     "produtos": [],
