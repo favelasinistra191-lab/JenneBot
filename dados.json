@@ -3960,9 +3960,78 @@
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
             "vendido": 0
+        },
+        {
+            "id": 430,
+            "categoria": "gg",
+            "conteudo": "4066699962156255|06|2033|575",
+            "bin": "406669",
+            "banco": "BANCO BRADESCO S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 431,
+            "categoria": "gg",
+            "conteudo": "4066699962160661|06|2033|723",
+            "bin": "406669",
+            "banco": "BANCO BRADESCO S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 432,
+            "categoria": "gg",
+            "conteudo": "4066699962175354|06|2033|179",
+            "bin": "406669",
+            "banco": "BANCO BRADESCO S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 433,
+            "categoria": "gg",
+            "conteudo": "4066699962151363|06|2033|354",
+            "bin": "406669",
+            "banco": "BANCO BRADESCO S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 434,
+            "categoria": "gg",
+            "conteudo": "4066699962108017|06|2033|896",
+            "bin": "406669",
+            "banco": "BANCO BRADESCO S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 435,
+            "categoria": "gg",
+            "conteudo": "4066699962166783|06|2033|294",
+            "bin": "406669",
+            "banco": "BANCO BRADESCO S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 436,
+            "categoria": "gg",
+            "conteudo": "4066699962125045|06|2033|203",
+            "bin": "406669",
+            "banco": "BANCO BRADESCO S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
         }
     ],
-    "admin_pendente": {},
+    "admin_pendente": {
+        "admin_id": 8776521959,
+        "tipo": "gg",
+        "bin": "406669",
+        "banco": "BANCO BRADESCO S.A.",
+        "bandeira": "VISA"
+    },
     "dados_titular": [
         {
             "id": 1,
