@@ -64,7 +64,7 @@
             "user_id": 7932069040,
             "nome": "TP",
             "username": "",
-            "saldo": 0.0
+            "saldo": 8.0
         }
     ],
     "produtos": [],
@@ -113,7 +113,7 @@
         {
             "codigo": "GIFT-9E4BB055",
             "valor": 8.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
