@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 112.0
+            "saldo": 108.0
         },
         {
             "user_id": 8694871225,
@@ -2563,7 +2563,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 273,
@@ -4223,7 +4223,7 @@
         {
             "id": 35,
             "conteudo": "BETINA DÉBORA FARIAS|480.750.924-14",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 36,
