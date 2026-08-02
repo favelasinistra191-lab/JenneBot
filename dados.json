@@ -64,7 +64,7 @@
             "user_id": 7932069040,
             "nome": "TP",
             "username": "",
-            "saldo": 4.0
+            "saldo": 0.0
         }
     ],
     "produtos": [],
@@ -3490,7 +3490,7 @@
             "bin": "406669",
             "banco": "BANCO BRADESCO S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 376,
@@ -4213,7 +4213,7 @@
         {
             "id": 33,
             "conteudo": "RAFAELA VERA ALMADA|132.486.946-10",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 34,
