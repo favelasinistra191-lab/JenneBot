@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 124.0
+            "saldo": 120.0
         },
         {
             "user_id": 8694871225,
@@ -194,7 +194,7 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 11,
@@ -4187,7 +4187,7 @@
         {
             "id": 30,
             "conteudo": "MURILO ALEXANDRE HUGO DUARTE|029.748.444-30",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 31,
