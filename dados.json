@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 152.0
+            "saldo": 148.0
         },
         {
             "user_id": 8694871225,
@@ -2300,7 +2300,7 @@
             "bin": "406669",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 245,
@@ -4152,7 +4152,7 @@
         {
             "id": 23,
             "conteudo": "NATHAN VICTOR DRUMOND|264.605.896-90",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 24,
