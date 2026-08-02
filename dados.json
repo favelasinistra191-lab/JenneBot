@@ -103,6 +103,11 @@
             "codigo": "GIFT-DAFA4F78",
             "valor": 100.0,
             "usado": 1
+        },
+        {
+            "codigo": "GIFT-9E4BB055",
+            "valor": 8.0,
+            "usado": 0
         }
     ],
     "estoque": [
