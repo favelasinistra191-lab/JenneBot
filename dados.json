@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 132.0
+            "saldo": 128.0
         },
         {
             "user_id": 8694871225,
@@ -2336,7 +2336,7 @@
             "bin": "406669",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 249,
@@ -4177,7 +4177,7 @@
         {
             "id": 28,
             "conteudo": "SOPHIA CAROLINA SALES|228.813.621-92",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 29,
