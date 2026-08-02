@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 116.0
+            "saldo": 112.0
         },
         {
             "user_id": 8694871225,
@@ -3499,7 +3499,7 @@
             "bin": "406669",
             "banco": "BANCO BRADESCO S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 377,
@@ -4218,7 +4218,7 @@
         {
             "id": 34,
             "conteudo": "GABRIELLY ELZA DA ROCHA|663.001.703-06",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 35,
