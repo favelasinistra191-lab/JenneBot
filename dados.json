@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 144.0
+            "saldo": 140.0
         },
         {
             "user_id": 8694871225,
@@ -2543,7 +2543,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 272,
@@ -4162,7 +4162,7 @@
         {
             "id": 25,
             "conteudo": "ALINE KAMILLY FREITAS|934.482.134-89",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 26,
