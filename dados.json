@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 140.0
+            "saldo": 136.0
         },
         {
             "user_id": 8694871225,
@@ -2318,7 +2318,7 @@
             "bin": "406669",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 247,
@@ -4167,7 +4167,7 @@
         {
             "id": 26,
             "conteudo": "NELSON DAVI FRANCISCO BARROS|553.066.179-30",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 27,
