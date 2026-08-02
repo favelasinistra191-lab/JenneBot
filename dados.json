@@ -64,7 +64,7 @@
             "user_id": 7932069040,
             "nome": "TP",
             "username": "",
-            "saldo": 8.0
+            "saldo": 4.0
         }
     ],
     "produtos": [],
@@ -2437,7 +2437,7 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 259,
@@ -4208,7 +4208,7 @@
         {
             "id": 32,
             "conteudo": "NELSON NICOLAS ELIAS RODRIGUES|147.711.684-23",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 33,
