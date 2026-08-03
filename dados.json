@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 96.0
+            "saldo": 92.0
         },
         {
             "user_id": 8694871225,
@@ -2452,7 +2452,7 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 260,
@@ -4284,7 +4284,7 @@
         {
             "id": 46,
             "conteudo": "LUÍS OSVALDO HEITOR MELO|039.439.746-00",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 47,
