@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 108.0
+            "saldo": 104.0
         },
         {
             "user_id": 8694871225,
@@ -2590,7 +2590,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 276,
@@ -4263,7 +4263,7 @@
         {
             "id": 43,
             "conteudo": "AMANDA ANALU LAÍS FOGAÇA|764.988.318-39",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 44,
