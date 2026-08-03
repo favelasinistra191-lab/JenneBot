@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 110.0
+            "saldo": 106.0
         },
         {
             "user_id": 7162864988,
@@ -2581,7 +2581,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 275,
@@ -4248,7 +4248,7 @@
         {
             "id": 40,
             "conteudo": "LAÍS ANALU CAMPOS|076.411.858-78",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 41,
