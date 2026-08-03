@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 92.0
+            "saldo": 88.0
         },
         {
             "user_id": 8694871225,
@@ -2623,7 +2623,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 279,
@@ -4289,7 +4289,7 @@
         {
             "id": 47,
             "conteudo": "CLÁUDIO RUAN FERNANDES|190.856.836-45",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 48,
