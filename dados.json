@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 114.0
+            "saldo": 110.0
         },
         {
             "user_id": 7162864988,
@@ -2572,7 +2572,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 274,
@@ -4243,7 +4243,7 @@
         {
             "id": 39,
             "conteudo": "KAUÊ JULIO GUSTAVO ROCHA|062.523.341-70",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 40,
