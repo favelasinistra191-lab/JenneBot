@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 0.0
+            "saldo": 25.0
         },
         {
             "user_id": 8240840152,
@@ -124,7 +124,7 @@
         {
             "codigo": "GIFT-52250767",
             "valor": 25.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
