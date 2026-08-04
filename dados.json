@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 21.0
+            "saldo": 17.0
         },
         {
             "user_id": 8240840152,
@@ -2655,7 +2655,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 282,
@@ -4329,7 +4329,7 @@
         {
             "id": 54,
             "conteudo": "SÔNIA VERA ALANA MONTEIRO|376.054.825-31",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 55,
