@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 80.0
+            "saldo": 76.0
         },
         {
             "user_id": 8694871225,
@@ -2461,7 +2461,7 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 261,
@@ -4304,7 +4304,7 @@
         {
             "id": 50,
             "conteudo": "PEDRO ARTHUR THIAGO ASSIS|818.270.907-58",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 51,
