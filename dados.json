@@ -120,6 +120,11 @@
             "codigo": "GIFT-9E4BB055",
             "valor": 8.0,
             "usado": 1
+        },
+        {
+            "codigo": "GIFT-52250767",
+            "valor": 25.0,
+            "usado": 0
         }
     ],
     "estoque": [
