@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 88.0
+            "saldo": 84.0
         },
         {
             "user_id": 8694871225,
@@ -2632,7 +2632,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 280,
@@ -4294,7 +4294,7 @@
         {
             "id": 48,
             "conteudo": "STELLA PIETRA AGATHA DA CUNHA|784.495.369-10",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 49,
