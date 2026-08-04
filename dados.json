@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 9.0
+            "saldo": 5.0
         },
         {
             "user_id": 8240840152,
@@ -2475,7 +2475,7 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 262,
@@ -4344,7 +4344,7 @@
         {
             "id": 57,
             "conteudo": "MANOEL THIAGO SEVERINO PINTO|581.422.619-60",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 58,
