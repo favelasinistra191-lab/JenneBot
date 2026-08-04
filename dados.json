@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 25.0
+            "saldo": 21.0
         },
         {
             "user_id": 8240840152,
@@ -2646,7 +2646,7 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 281,
@@ -4324,7 +4324,7 @@
         {
             "id": 53,
             "conteudo": "NATHAN VICTOR DRUMOND|264.605.896-90",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 54,
