@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 70.0
+            "saldo": 66.0
         },
         {
             "user_id": 7162864988,
@@ -4011,7 +4011,7 @@
             "bin": "406669",
             "banco": "BANCO BRADESCO S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 432,
@@ -4390,7 +4390,7 @@
         {
             "id": 65,
             "conteudo": "BETINA DÉBORA FARIAS|480.750.924-14",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 66,
