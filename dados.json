@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 78.0
+            "saldo": 74.0
         },
         {
             "user_id": 7162864988,
@@ -3534,7 +3534,7 @@
             "bin": "406669",
             "banco": "BANCO BRADESCO S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 379,
@@ -4380,7 +4380,7 @@
         {
             "id": 63,
             "conteudo": "RAFAELA VERA ALMADA|132.486.946-10",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 64,
