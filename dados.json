@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 94.0
+            "saldo": 90.0
         },
         {
             "user_id": 7162864988,
@@ -303,7 +303,7 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1
         },
         {
             "id": 20,
@@ -4360,7 +4360,7 @@
         {
             "id": 59,
             "conteudo": "SILVANA BEATRIZ SILVA|705.656.768-14",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 60,
