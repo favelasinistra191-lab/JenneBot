@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 86.0
+            "saldo": 82.0
         },
         {
             "user_id": 7162864988,
@@ -321,7 +321,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8776521959
         },
         {
             "id": 22,
@@ -4395,7 +4396,7 @@
         {
             "id": 66,
             "conteudo": "KEVIN MARCELO JUAN ALMEIDA|666.360.987-40",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 67,
