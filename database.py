@@ -120,6 +120,32 @@ def obter_saldo(user_id):
             return float(u.get("saldo", 0.0))
     return 0.0
 
+def adicionar_saldo_usuario(user_id, valor_adicional):
+    """Adiciona saldo ao usuário (já considerando o bônus em dobro calculado no main)"""
+    dados = carregar_dados(forcar_atualizacao=True)
+    usuarios = dados.get("usuarios", [])
+    
+    usuario_encontrado = None
+    for u in usuarios:
+        if u["user_id"] == user_id:
+            usuario_encontrado = u
+            break
+            
+    if not usuario_encontrado:
+        # Se por acaso não achar, cria o usuário na hora
+        usuarios.append({
+            "user_id": user_id,
+            "nome": "Cliente",
+            "username": "",
+            "saldo": float(valor_adicional)
+        })
+    else:
+        usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + float(valor_adicional)
+        
+    dados["usuarios"] = usuarios
+    salvar_dados(dados)
+    return obter_saldo(user_id)
+
 def obter_dados_relatorio():
     dados = carregar_dados()
     clientes = len(dados.get("usuarios", []))
