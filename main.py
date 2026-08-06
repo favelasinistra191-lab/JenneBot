@@ -22,7 +22,7 @@ db.criar_tabelas()
 
 app = Flask(__name__)
 
-# Access Token de PRODUÇÃO oficial do Mercado Pago (Copiado diretamente do painel)
+# Access Token de PRODUÇÃO oficial do Mercado Pago
 ACCESS_TOKEN = "APP_USR-249848378901175-080605-e67c3c2b3575d5a687864a126913a7ae-3171236437"
 
 @app.route('/')
@@ -395,6 +395,8 @@ def callback_query(call):
             "Content-Type": "application/json",
             "X-Idempotency-Key": f"recarga-{user_id}-{valor}-{uuid.uuid4().hex[:6]}"
         }
+        
+        # ATENÇÃO: Substitua o número abaixo pelo SEU CPF real caso dê erro de identificação no Mercado Pago
         payload = {
             "transaction_amount": valor,
             "description": f"Recarga JenneStore (R$ {valor})",
@@ -402,7 +404,7 @@ def callback_query(call):
             "payer": {
                 "email": f"usuario_{user_id}@bot.com",
                 "first_name": call.from_user.first_name or "Cliente",
-                "identification": {"type": "CPF", "number": "19119119119"}
+                "identification": {"type": "CPF", "number": "00000000000"} 
             }
         }
 
