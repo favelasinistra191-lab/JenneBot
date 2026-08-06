@@ -1,3 +1,7 @@
+"""
+Módulo de Banco de Dados • JenneStoreBot
+Gerenciamento de Cache, GitHub, Usuários, Indicação Automática e Histórico
+"""
 import os
 import json
 import base64
@@ -10,7 +14,7 @@ FILE_PATH = "dados.json"
 
 _cache_dados = None
 _ultimo_carregamento = 0
-CACHE_TTL = 10  # Tempo em segundos para revalidar com o GitHub
+CACHE_TTL = 10  # Segundos para revalidar cache
 
 def carregar_dados(forcar_atualizacao=False):
     global _cache_dados, _ultimo_carregamento
@@ -94,22 +98,30 @@ def criar_tabelas():
     dados = carregar_dados(forcar_atualizacao=True)
     if not dados.get("usuarios"):
         salvar_dados(dados)
-    print("Banco de dados via GitHub e Cache configurados com sucesso!")
+    print("Banco de dados configurado com sucesso!")
 
-def garantir_usuario(user_id, nome, username):
-    dados = carregar_dados()
+def garantir_usuario(user_id, nome, username, indicado_por=None):
+    dados = carregar_dados(forcar_atualizacao=True)
     usuarios = dados.get("usuarios", [])
     
     for u in usuarios:
         if u["user_id"] == user_id:
+            # Atualizar indicação caso não tenha e o link tenha fornecido um válido
+            if not u.get("indicado_por") and indicado_por and indicado_por != user_id:
+                u["indicado_por"] = indicado_por
+                salvar_dados(dados)
             return
             
-    usuarios.append({
+    # Criar novo usuário com suporte a indicação
+    novo_usuario = {
         "user_id": user_id,
         "nome": nome,
         "username": username,
-        "saldo": 0.0
-    })
+        "saldo": 0.0,
+        "indicado_por": indicado_por if (indicado_por and indicado_por != user_id) else None,
+        "indicacao_paga": False
+    }
+    usuarios.append(novo_usuario)
     dados["usuarios"] = usuarios
     salvar_dados(dados)
 
@@ -120,37 +132,11 @@ def obter_saldo(user_id):
             return float(u.get("saldo", 0.0))
     return 0.0
 
-def adicionar_saldo_usuario(user_id, valor_adicional):
-    """Adiciona saldo ao usuário (já considerando o bônus em dobro calculado no main)"""
-    dados = carregar_dados(forcar_atualizacao=True)
-    usuarios = dados.get("usuarios", [])
-    
-    usuario_encontrado = None
-    for u in usuarios:
-        if u["user_id"] == user_id:
-            usuario_encontrado = u
-            break
-            
-    if not usuario_encontrado:
-        # Se por acaso não achar, cria o usuário na hora
-        usuarios.append({
-            "user_id": user_id,
-            "nome": "Cliente",
-            "username": "",
-            "saldo": float(valor_adicional)
-        })
-    else:
-        usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + float(valor_adicional)
-        
-    dados["usuarios"] = usuarios
-    salvar_dados(dados)
-    return obter_saldo(user_id)
-
 def obter_dados_relatorio():
     dados = carregar_dados()
     clientes = len(dados.get("usuarios", []))
     vendas = len([e for e in dados.get("estoque", []) if e.get("vendido") == 1])
-    faturamento = sum([12.0 for e in dados.get("estoque", []) if e.get("vendido") == 1])
+    faturamento = sum([4.0 for e in dados.get("estoque", []) if e.get("vendido") == 1])
     return vendas, faturamento, clientes
 
 def adicionar_lote_estoque(lista_itens, categoria, bin="000000", banco="GERAL", bandeira="GERAL"):
@@ -205,6 +191,14 @@ def listar_estoque_gg_agrupado():
             
     return [(b, band, qtd) for (b, band), qtd in agrupado.items()]
 
+def obter_historico_compras(user_id):
+    dados = carregar_dados()
+    estoque = dados.get("estoque", [])
+    # Filtra itens vendidos que pertencem ao usuário (ou registrados nas compras)
+    # Como o estoque atual marca apenas vendido=1, vamos registrar o comprador no item ao vender
+    historico = [e for e in estoque if e.get("vendido") == 1 and e.get("comprado_por") == user_id]
+    return historico
+
 def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     dados = carregar_dados(forcar_atualizacao=True)
     usuarios = dados.get("usuarios", [])
@@ -242,6 +236,7 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
 
     user["saldo"] -= preco
     item_escolhido["vendido"] = 1
+    item_escolhido["comprado_por"] = user_id  # Registra o comprador para o histórico
     
     res_dados = "N/A"
     if titular_escolhido:
