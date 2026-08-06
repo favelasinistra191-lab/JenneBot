@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Profissional • GGs com Dados Casados + Indicação por Depósito + Recarga Pix Produção
+Versão Profissional • GGs com Dados Casados + Indicação por Depósito + Verificação Real Pix na API
 """
 import os
 import logging
@@ -396,7 +396,6 @@ def callback_query(call):
             "X-Idempotency-Key": f"recarga-{user_id}-{valor}-{uuid.uuid4().hex[:6]}"
         }
         
-        # ATENÇÃO: Substitua o número abaixo pelo SEU CPF real caso dê erro de identificação no Mercado Pago
         payload = {
             "transaction_amount": valor,
             "description": f"Recarga JenneStore (R$ {valor})",
@@ -413,19 +412,21 @@ def callback_query(call):
             dados_resposta = response.json()
             
             if response.status_code in [200, 201]:
+                payment_id = dados_resposta.get("id")
                 point_of_interaction = dados_resposta.get("point_of_interaction", {})
                 qr_code = point_of_interaction.get("transaction_data", {}).get("qr_code")
                 
-                if qr_code:
+                if qr_code and payment_id:
                     mensagem_pix = (
                         f"✅ **PIX GERADO COM SUCESSO!**\n\n"
                         f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
                         f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
-                        f"📲 *Pague no banco e clique em '🔄 Verificar Pagamento' abaixo.*"
+                        f"📲 *Pague no seu banco e clique em '🔄 Verificar Pagamento' abaixo.*"
                     )
                     markup = types.InlineKeyboardMarkup(row_width=1)
+                    # Salvamos o ID do pagamento real do Mercado Pago no callback_data para consulta segura
                     markup.add(
-                        types.InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"verificar_{valor}"),
+                        types.InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"verificar_{payment_id}_{valor}"),
                         types.InlineKeyboardButton("🔙 Voltar", callback_data="menu_recarga")
                     )
                     bot.edit_message_text(text=mensagem_pix, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
@@ -438,46 +439,68 @@ def callback_query(call):
             bot.send_message(call.message.chat.id, f"❌ Erro de conexão: {e}")
 
     elif data.startswith("verificar_"):
-        bot.answer_callback_query(call.id, "Processando...")
-        valor = float(data.split("_")[1])
-        valor_total = valor * 2  # Dobro
+        bot.answer_callback_query(call.id, "Consultando pagamento no banco...")
+        partes = data.split("_")
+        payment_id = partes[1]
+        valor = float(partes[2])
         
-        dados = db.carregar_dados(forcar_atualizacao=True)
-        usuarios = dados.get("usuarios", [])
+        # CONSULTA REAL NA API DO MERCADO PAGO
+        url_check = f"https://api.mercadopago.com/v1/payments/{payment_id}"
+        headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
         
-        usuario_encontrado = None
-        for u in usuarios:
-            if u["user_id"] == user_id:
-                usuario_encontrado = u
-                break
+        try:
+            resp = requests.get(url_check, headers=headers, timeout=10)
+            if resp.status_code == 200:
+                pag_dados = resp.json()
+                status_pagamento = pag_dados.get("status")
+                
+                if status_pagamento == "approved":
+                    # PAGAMENTO APROVADO DE VERDADE PELA API!
+                    valor_total = valor * 2  # Dobro
+                    
+                    dados = db.carregar_dados(forcar_atualizacao=True)
+                    usuarios = dados.get("usuarios", [])
+                    
+                    usuario_encontrado = None
+                    for u in usuarios:
+                        if u["user_id"] == user_id:
+                            usuario_encontrado = u
+                            break
 
-        if usuario_encontrado:
-            usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + valor_total
-            
-            # Validação do bônus de indicação apenas ao realizar o primeiro depósito
-            indicado_por = usuario_encontrado.get("indicado_por")
-            if indicado_por and not usuario_encontrado.get("indicacao_paga", False):
-                usuario_encontrado["indicacao_paga"] = True
-                for u_ind in usuarios:
-                    if u_ind["user_id"] == indicado_por:
-                        u_ind["saldo"] = float(u_ind.get("saldo", 0.0)) + 20.0
-                        break
+                    if usuario_encontrado:
+                        usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + valor_total
+                        
+                        # Validação do bônus de indicação apenas ao realizar o primeiro depósito real
+                        indicado_por = usuario_encontrado.get("indicado_por")
+                        if indicado_por and not usuario_encontrado.get("indicacao_paga", False):
+                            usuario_encontrado["indicacao_paga"] = True
+                            for u_ind in usuarios:
+                                if u_ind["user_id"] == indicado_por:
+                                    u_ind["saldo"] = float(u_ind.get("saldo", 0.0)) + 20.0
+                                    break
 
-            db.salvar_dados(dados)
-            novo_saldo = usuario_encontrado["saldo"]
-        else:
-            novo_saldo = valor_total
+                        db.salvar_dados(dados)
+                        novo_saldo = usuario_encontrado["saldo"]
+                    else:
+                        novo_saldo = valor_total
 
-        markup = types.InlineKeyboardMarkup()
-        markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
-        
-        bot.edit_message_text(
-            text=f"🎉 **PAGAMENTO CONFIRMADO!**\n\nCrédito de R$ {valor:.2f} + Bônus adicionados.\n💰 **Novo Saldo:** `R$ {novo_saldo:.2f}`",
-            chat_id=call.message.chat.id,
-            message_id=call.message.message_id,
-            reply_markup=markup,
-            parse_mode="Markdown"
-        )
+                    markup = types.InlineKeyboardMarkup()
+                    markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
+                    
+                    bot.edit_message_text(
+                        text=f"🎉 **PAGAMENTO CONFIRMADO PELA API!**\n\nCrédito de R$ {valor:.2f} + Bônus adicionados.\n💰 **Novo Saldo:** `R$ {novo_saldo:.2f}`",
+                        chat_id=call.message.chat.id,
+                        message_id=call.message.message_id,
+                        reply_markup=markup,
+                        parse_mode="Markdown"
+                    )
+                else:
+                    # Pagamento ainda pendente ou rejeitado
+                    bot.answer_callback_query(call.id, "⚠️ Pagamento ainda não identificado. Pague o Pix e tente novamente.", show_alert=True)
+            else:
+                bot.answer_callback_query(call.id, "❌ Erro ao consultar o pagamento na API.", show_alert=True)
+        except Exception as e:
+            bot.answer_callback_query(call.id, f"❌ Erro de conexão: {e}", show_alert=True)
 
     elif data == "menu_gg":
         bot.answer_callback_query(call.id)
@@ -525,7 +548,7 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando com recarga real de produção e indicação por depósito...")
+    LOG.info("Bot rodando com validação real de pagamento via API do Mercado Pago...")
     
     try:
         bot.remove_webhook()
