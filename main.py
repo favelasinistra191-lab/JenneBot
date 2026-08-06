@@ -22,8 +22,8 @@ db.criar_tabelas()
 
 app = Flask(__name__)
 
-# Access Token de PRODUÇÃO oficial do Mercado Pago
-ACCESS_TOKEN = "APP_USR-2498483378901175-080605-e67c3c2b3575d5a687864e126913a7ac-3171236437"
+# Access Token de PRODUÇÃO oficial do Mercado Pago (Copiado diretamente do painel)
+ACCESS_TOKEN = "APP_USR-249848378901175-080605-e67c3c2b3575d5a687864a126913a7ae-3171236437"
 
 @app.route('/')
 def home():
@@ -351,7 +351,7 @@ def callback_query(call):
         link_indicacao = f"https://t.me/{bot_username}?start=ref_{user_id}"
         bot.send_message(
             call.message.chat.id,
-            f"🤝 **INDUÇÃO E GANHE • R$ 20,00**\n\n"
+            f"🤝 **INDICAÇÃO E GANHE • R$ 20,00**\n\n"
             f"Convide amigos usando seu link:\n`{link_indicacao}`\n\n"
             f"💰 *Você ganha R$ 20,00 de saldo automaticamente assim que o seu amigo convidado fizer o **primeiro depósito/recarga** no bot!*",
             parse_mode="Markdown"
