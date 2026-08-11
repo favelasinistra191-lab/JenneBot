@@ -10,7 +10,7 @@
             "user_id": 7162864988,
             "nome": "Ice",
             "username": "Ice_lws7",
-            "saldo": 8.0
+            "saldo": 4.0
         },
         {
             "user_id": 8824278848,
@@ -2492,7 +2492,8 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7162864988
         },
         {
             "id": 263,
@@ -4419,7 +4420,7 @@
         {
             "id": 70,
             "conteudo": "LAÍS ANALU CAMPOS|076.411.858-78",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 71,
