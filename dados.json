@@ -70,7 +70,7 @@
             "user_id": 8495140756,
             "nome": "ALFREDY",
             "username": "",
-            "saldo": 16.0
+            "saldo": 12.0
         },
         {
             "user_id": 8090037227,
@@ -2503,7 +2503,8 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8495140756
         },
         {
             "id": 264,
@@ -4431,7 +4432,7 @@
         {
             "id": 72,
             "conteudo": "SOPHIE JOANA DA PAZ|716.663.512-61",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 73,
