@@ -70,7 +70,7 @@
             "user_id": 8495140756,
             "nome": "ALFREDY",
             "username": "",
-            "saldo": 12.0
+            "saldo": 8.0
         },
         {
             "user_id": 8090037227,
@@ -4036,7 +4036,8 @@
             "bin": "406669",
             "banco": "BANCO BRADESCO S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8495140756
         },
         {
             "id": 434,
@@ -4437,7 +4438,7 @@
         {
             "id": 73,
             "conteudo": "AMANDA ANALU LAÍS FOGAÇA|764.988.318-39",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 74,
