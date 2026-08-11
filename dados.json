@@ -70,7 +70,7 @@
             "user_id": 8495140756,
             "nome": "ALFREDY",
             "username": "",
-            "saldo": 4.0
+            "saldo": 0.0
         },
         {
             "user_id": 8090037227,
@@ -2731,7 +2731,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8495140756
         },
         {
             "id": 289,
@@ -4449,7 +4450,7 @@
         {
             "id": 75,
             "conteudo": "FÁBIO RAUL NASCIMENTO|788.827.438-29",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 76,
