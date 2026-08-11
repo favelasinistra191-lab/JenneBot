@@ -10,7 +10,7 @@
             "user_id": 7162864988,
             "nome": "Ice",
             "username": "Ice_lws7",
-            "saldo": 20.0
+            "saldo": 16.0
         },
         {
             "user_id": 8824278848,
@@ -4021,7 +4021,8 @@
             "bin": "406669",
             "banco": "BANCO BRADESCO S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7162864988
         },
         {
             "id": 433,
@@ -4401,7 +4402,7 @@
         {
             "id": 67,
             "conteudo": "THALES THOMAS SANTOS|760.095.806-68",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 68,
