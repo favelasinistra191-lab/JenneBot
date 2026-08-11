@@ -70,7 +70,7 @@
             "user_id": 8495140756,
             "nome": "ALFREDY",
             "username": "",
-            "saldo": 20.0
+            "saldo": 16.0
         },
         {
             "user_id": 8090037227,
@@ -341,7 +341,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8495140756
         },
         {
             "id": 24,
@@ -4425,7 +4426,7 @@
         {
             "id": 71,
             "conteudo": "JULIO MURILO TEIXEIRA|201.925.450-60",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 72,
