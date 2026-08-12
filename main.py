@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Profissional Completa • GGs com Dados Casados + ElitePay (Webhook Automático)
+Versão Profissional Completa • GGs com Dados Casados + ElitePay (Webhook + Pix Seguro)
 """
 import os
 import logging
@@ -43,19 +43,15 @@ def webhook_elitepay():
 
         LOG.info(f"Webhook ElitePay recebido: {dados_notificacao}")
 
-        # Extrai o status e a referência externa enviada na criação do Pix
         status_pagamento = dados_notificacao.get("status") or dados_notificacao.get("payment_status")
         external_ref = dados_notificacao.get("external_reference") or dados_notificacao.get("txid")
 
-        # Verifica se o pagamento foi aprovado
         if status_pagamento in ["approved", "pago", "CONCLUIDA", "PAID"]:
             if external_ref and "recarga_" in str(external_ref):
-                # O formato esperado na external_reference é: recarga_{user_id}_{uuid}
                 partes = str(external_ref).split("_")
                 if len(partes) >= 2:
                     user_id = int(partes[1])
                     
-                    # Pega o valor pago enviado pela API (ou tenta deduzir)
                     valor_pago = float(dados_notificacao.get("valor") or dados_notificacao.get("amount") or 0.0)
                     
                     if valor_pago > 0:
@@ -73,7 +69,6 @@ def webhook_elitepay():
                         if usuario_encontrado:
                             usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + valor_total
                             
-                            # Sistema de indicação (bônus de R$ 20 para quem indicou)
                             indicado_por = usuario_encontrado.get("indicado_por")
                             if indicado_por and not usuario_encontrado.get("indicacao_paga", False):
                                 usuario_encontrado["indicacao_paga"] = True
@@ -85,7 +80,6 @@ def webhook_elitepay():
                             db.salvar_dados(dados)
                             novo_saldo = usuario_encontrado["saldo"]
                             
-                            # Envia mensagem automática no Telegram avisando o usuário
                             markup = types.InlineKeyboardMarkup()
                             markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
                             
@@ -473,34 +467,43 @@ def cmd_pix_customizado(message):
 
     headers = {
         "Authorization": f"Bearer {ELITE_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "Accept": "application/json"
     }
     
-    # Geramos a referência incluindo o webhook_url se a API aceitar, ou configurada diretamente no painel deles
     payload = {
         "valor": valor,
         "external_reference": f"recarga_{user_id}_{uuid.uuid4().hex[:6]}"
     }
 
     try:
-        response = requests.post(f"{ELITE_URL}/pix/create", json=payload, headers=headers, timeout=10)
-        dados_resposta = response.json()
+        response = requests.post(f"{ELITE_URL}/pix/create", json=payload, headers=headers, timeout=15)
         
-        if response.status_code in [200, 201] and "qr_code" in dados_resposta:
-            qr_code = dados_resposta["qr_code"]
+        LOG.info(f"Resposta bruta ElitePay: {response.status_code} - {response.text}")
+        
+        if response.status_code in [200, 201]:
+            try:
+                dados_resposta = response.json()
+            except Exception:
+                bot.send_message(message.chat.id, f"❌ Erro: A API respondeu com sucesso mas o formato não é JSON válido.\nResposta: {response.text[:200]}")
+                return
+
+            qr_code = dados_resposta.get("qr_code") or dados_resposta.get("pix_copia_e_cola") or dados_resposta.get("copia_e_cola")
             
-            mensagem_pix = (
-                f"✅ **PIX ELITEPAY GERADO!**\n\n"
-                f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
-                f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
-                f"📲 *Pague no seu banco. O saldo cairá **automaticamente** assim que o pagamento for aprovado!*"
-            )
-            bot.send_message(message.chat.id, mensagem_pix, parse_mode="Markdown")
+            if qr_code:
+                mensagem_pix = (
+                    f"✅ **PIX GERADO!**\n\n"
+                    f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
+                    f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
+                
+                bot.send_message(message.chat.id, mensagem_pix, parse_mode="Markdown")
+            else:
+                bot.send_message(message.chat.id, f"❌ A API gerou mas não retornou o código Copia e Cola.\nRetorno: {dados_resposta}")
         else:
-            erro_msg = dados_resposta.get("message", "Erro ao gerar Pix na ElitePay")
-            bot.send_message(message.chat.id, f"❌ Erro: {erro_msg}")
+            bot.send_message(message.chat.id, f"❌ Erro na API (Status {response.status_code}):\n{response.text[:300]}")
+            
     except Exception as e:
-        bot.send_message(message.chat.id, f"❌ Erro de conexão com a API: {e}")
+        bot.send_message(message.chat.id, f"❌ Erro de conexão ao chamar a ElitePay: {e}")
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -560,7 +563,7 @@ def callback_query(call):
     elif data == "menu_recarga":
         bot.answer_callback_query(call.id)
         msg_recarga = (
-            f"💳 **RECARGA PIX • ELITEPAY**\n\n"
+            f"💳 **RECARGA PIX**\n\n"
             f"⚡ Pagamento instantâneo automatizado.\n"
             f"🔥 *Promoção de saldo em dobro ativa!*\n\n"
             f"✍️ **Para fazer sua recarga, envie no chat o comando:**\n"
@@ -659,15 +662,14 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando com Webhook Automático da ElitePay...")
+    LOG.info("Bot rodando com Webhook Automático e Proteção de JSON na ElitePay...")
     
     try:
         bot.remove_webhook()
     except Exception:
         pass
 
-    whileType = True
-    while whileType:
+    while True:
         try:
             bot.infinity_polling(skip_pending=True, timeout=30, long_polling_timeout=30)
         except Exception as e:
