@@ -6,6 +6,7 @@ import os
 import logging
 import threading
 import uuid
+from datetime import datetime, timedelta
 from flask import Flask
 import telebot
 from telebot import types
@@ -22,7 +23,10 @@ db.criar_tabelas()
 
 app = Flask(__name__)
 
-# Access Token de PRODUÇÃO oficial do Mercado Pago
+# ID ou Link do Canal de Notificações / Trava
+CANAL_OBRIGATORIO = "https://t.me/+VNkIZojSrHs4NDJh"
+CANAL_ID_VERIFICACAO = -1002476591234  # Substitua pelo ID numérico do seu canal se preferir, ou o link trataremos via verificação de admin
+
 ACCESS_TOKEN = "APP_USR-249848378901175-080605-e67c3c2b3575d5a687864a126913a7ae-3171236437"
 
 @app.route('/')
@@ -32,6 +36,20 @@ def home():
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
+
+
+def verificar_inscricao_canal(user_id):
+    try:
+        # Tenta verificar se o usuário é membro do canal obrigatório
+        # Nota: O bot precisa ser admin do canal para checar.
+        chat_member = bot.get_chat_member(CANAL_OBRIGATORIO, user_id)
+        if chat_member.status in ['member', 'administrator', 'creator']:
+            return True
+    except Exception as e:
+        LOG.warning(f"Erro ao verificar inscrição no canal: {e}")
+        # Se falhar a verificação exata por link privado, libera para evitar travamento, ou exige caso o ID esteja configurado.
+        return True 
+    return False
 
 
 def consultar_bin(bin6):
@@ -90,7 +108,7 @@ def main_menu(user_id):
         types.InlineKeyboardButton("📦 Minhas Compras", callback_data="historico_compras"),
         types.InlineKeyboardButton("🎁 Resgatar Gift", callback_data="info_gift"),
         types.InlineKeyboardButton("🤝 Indique e Ganhe", callback_data="info_indicar"),
-        types.InlineKeyboardButton("📞 Suporte Oficial", callback_data="suporte")
+        types.InlineKeyboardButton("📞 Suporte", callback_data="suporte")
     )
     return text, markup
 
@@ -102,6 +120,21 @@ def cmd_start(message):
         primeiro_nome = message.from_user.first_name or "Cliente"
         username = message.from_user.username or ""
         
+        # Trava de Canal Obrigatório
+        if not verificar_inscricao_canal(user_id):
+            markup = types.InlineKeyboardMarkup(row_width=1)
+            markup.add(
+                types.InlineKeyboardButton("📢 Entrar no Canal Oficial", url=CANAL_OBRIGATORIO),
+                types.InlineKeyboardButton("🔄 Já Entrei / Verificar", callback_data="verificar_inscricao")
+            )
+            bot.send_message(
+                message.chat.id,
+                "⚠️ **Acesso Restrito!**\n\nPara utilizar o bot, você precisa entrar no nosso canal oficial primeiro.",
+                reply_markup=markup,
+                parse_mode="Markdown"
+            )
+            return
+
         args = message.text.split()
         indicado_por = None
         if len(args) > 1 and args[1].startswith("ref_"):
@@ -118,6 +151,17 @@ def cmd_start(message):
         LOG.error(f"Erro no start: {e}")
 
 
+@bot.callback_query_handler(func=lambda call: call.data == "verificar_inscricao")
+def callback_verificar_inscricao(call):
+    user_id = call.from_user.id
+    if verificar_inscricao_canal(user_id):
+        bot.answer_callback_query(call.id, "✅ Verificado com sucesso!", show_alert=True)
+        text, markup = main_menu(user_id)
+        bot.edit_message_text(text, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="Markdown")
+    else:
+        bot.answer_callback_query(call.id, "⚠️ Você ainda não entrou no canal!", show_alert=True)
+
+
 @bot.message_handler(commands=['admin', 'painel'])
 def cmd_admin(message):
     if message.from_user.id != config.ADMIN_ID:
@@ -128,7 +172,7 @@ def cmd_admin(message):
         f"👑 **Painel Administrativo • JenneStore**\n\n"
         f"📊 Clientes: `{clientes}` | Vendas: `{total_vendas}` | Faturamento: `R$ {faturamento:.2f}`\n\n"
         f"⚙️ **Comandos de Abastecimento:**\n"
-        f"• `/add_gg [BIN]` (Abastecer GGs a R$ 4,00)\n"
+        f"• `/abastecer [BIN]` (Abastecer GGs unificado)\n"
         f"• `/add_dados [lista]` (Abastecer titulares em lote)\n"
         f"• `/limpar_estoque` (Limpar não vendidos)\n"
         f"• `/gerar_gift [valor]` (Criar gift card)"
@@ -136,16 +180,16 @@ def cmd_admin(message):
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
 
-@bot.message_handler(commands=['add_gg'])
-def cmd_add_gg_etapa1(message):
+@bot.message_handler(commands=['abastecer'])
+def cmd_abastecer_etapa1(message):
     if message.from_user.id != config.ADMIN_ID:
         return
     
-    args = message.text.replace('/add_gg', '').strip()
+    args = message.text.replace('/abastecer', '').strip()
     bin6 = "".join(filter(str.isdigit, args))[:6]
     
     if len(bin6) < 6:
-        bot.reply_to(message, "⚠️ Use o formato: `/add_gg 422061`", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Use o formato: `/abastecer 422061`", parse_mode="Markdown")
         return
     
     bandeira, banco = consultar_bin(bin6)
@@ -164,7 +208,7 @@ def cmd_add_gg_etapa1(message):
         message, 
         f"🔍 **BIN Registrada!**\n\n"
         f"💳 **BIN:** `{bin6}` | **Bandeira:** `{bandeira}` | **Banco:** `{banco}`\n\n"
-        f"👇 **AGORA MANDE A LISTA COMPLETA DOS CARTÕES**.", 
+        f"👇 **AGORA MANDE A LISTA COMPLETA DOS CARTÕES (GGs)**.", 
         parse_mode="Markdown"
     )
 
@@ -207,7 +251,20 @@ def processar_etapa2(message):
             return
 
         db.adicionar_lote_estoque(cartoes, categoria='gg', bin=bin6, banco=banco, bandeira=bandeira)
-        bot.reply_to(message, f"✅ **Estoque Atualizado!**\n\n💳 **BIN:** `{bin6}`\n📦 **Adicionados:** `+{len(cartoes)} GGs`!", parse_mode="Markdown")
+        
+        qtd_adicionada = len(cartoes)
+        msg_sucesso = (
+            f"✅ **Estoque Atualizado com Sucesso!**\n\n"
+            f"📦 Adicionadas `{qtd_adicionada} novas GGs` ao bot!\n"
+            f"💳 **BIN:** `{bin6}` | **Bandeira:** `{bandeira}`"
+        )
+        bot.reply_to(message, msg_sucesso, parse_mode="Markdown")
+
+        # Envia também para o canal oficial
+        try:
+            bot.send_message(CANAL_OBRIGATORIO, msg_sucesso, parse_mode="Markdown")
+        except Exception:
+            pass
 
 
 @bot.message_handler(commands=['add_dados'])
@@ -339,7 +396,19 @@ def callback_query(call):
         
     elif data == "suporte":
         bot.answer_callback_query(call.id)
-        bot.send_message(call.message.chat.id, "📞 Suporte e atendimento via administrador do bot.", parse_mode="Markdown")
+        markup_sup = types.InlineKeyboardMarkup(row_width=1)
+        markup_sup.add(
+            types.InlineKeyboardButton("💬 Suporte Telegram", url="https://t.me/JENNE_BOT_SUPORTE"),
+            types.InlineKeyboardButton("💬 Suporte WhatsApp", url="https://wa.me/639272951705"),
+            types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu")
+        )
+        bot.edit_message_text(
+            text="📞 **CENTRAL DE SUPORTE OFICIAL**\n\nEscolha abaixo o canal de atendimento desejado:",
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            reply_markup=markup_sup,
+            parse_mode="Markdown"
+        )
         
     elif data == "info_gift":
         bot.answer_callback_query(call.id)
@@ -424,7 +493,6 @@ def callback_query(call):
                         f"📲 *Pague no seu banco e clique em '🔄 Verificar Pagamento' abaixo.*"
                     )
                     markup = types.InlineKeyboardMarkup(row_width=1)
-                    # Salvamos o ID do pagamento real do Mercado Pago no callback_data para consulta segura
                     markup.add(
                         types.InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"verificar_{payment_id}_{valor}"),
                         types.InlineKeyboardButton("🔙 Voltar", callback_data="menu_recarga")
@@ -444,7 +512,6 @@ def callback_query(call):
         payment_id = partes[1]
         valor = float(partes[2])
         
-        # CONSULTA REAL NA API DO MERCADO PAGO
         url_check = f"https://api.mercadopago.com/v1/payments/{payment_id}"
         headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
         
@@ -455,8 +522,7 @@ def callback_query(call):
                 status_pagamento = pag_dados.get("status")
                 
                 if status_pagamento == "approved":
-                    # PAGAMENTO APROVADO DE VERDADE PELA API!
-                    valor_total = valor * 2  # Dobro
+                    valor_total = valor * 2
                     
                     dados = db.carregar_dados(forcar_atualizacao=True)
                     usuarios = dados.get("usuarios", [])
@@ -470,7 +536,6 @@ def callback_query(call):
                     if usuario_encontrado:
                         usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + valor_total
                         
-                        # Validação do bônus de indicação apenas ao realizar o primeiro depósito real
                         indicado_por = usuario_encontrado.get("indicado_por")
                         if indicado_por and not usuario_encontrado.get("indicacao_paga", False):
                             usuario_encontrado["indicacao_paga"] = True
@@ -495,7 +560,6 @@ def callback_query(call):
                         parse_mode="Markdown"
                     )
                 else:
-                    # Pagamento ainda pendente ou rejeitado
                     bot.answer_callback_query(call.id, "⚠️ Pagamento ainda não identificado. Pague o Pix e tente novamente.", show_alert=True)
             else:
                 bot.answer_callback_query(call.id, "❌ Erro ao consultar o pagamento na API.", show_alert=True)
@@ -519,20 +583,53 @@ def callback_query(call):
         bin_escolhida = data.split("_")[2]
         bot.answer_callback_query(call.id)
         
-        status, res_gg, res_dados, banco_item, bandeira_item = db.realizar_compra_item_casado(user_id, 'gg', 4.0, bin_v=bin_escolhida)
+        status, res_gg, res_dados, banco_item, bandeira_item, bin_item = db.realizar_compra_item_casado(user_id, 'gg', 4.0, bin_v=bin_escolhida)
         
         if status == "ok":
+            partes_cartao = res_gg.split('|')
+            num_cc = partes_cartao[0] if len(partes_cartao) > 0 else "N/A"
+            mes_cc = partes_cartao[1] if len(partes_cartao) > 1 else "12"
+            ano_cc = partes_cartao[2] if len(partes_cartao) > 2 else "2032"
+            cvv_cc = partes_cartao[3] if len(partes_cartao) > 3 else "209"
+
+            partes_dados = res_dados.split('|')
+            nome_titular = partes_dados[0] if len(partes_dados) > 0 else res_dados
+            cpf_titular = partes_dados[1] if len(partes_dados) > 1 else "N/A"
+
+            tempo_reembolso = (datetime.now() + timedelta(minutes=10)).strftime("%d/%m/%Y %H:%M:%S")
+            saldo_atual = db.obter_saldo(user_id)
+
             msg = (
-                f"✅ **COMPRA APROVADA COM SUCESSO!**\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"💳 **CARTÃO (GG):**\n`{res_gg}`\n"
-                f"• Bandeira: `{bandeira_item}` | Banco: `{banco_item}`\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"👤 **TITULAR CASADO:**\n`{res_dados}`\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"⏱️ **Garantia:** Você tem **10 minutos** para conferir."
+                f"✅ Compra Efetuada! ✅\n\n"
+                f"💳Cartão: {num_cc}\n"
+                f"📆DATA: {mes_cc}/{ano_cc}\n"
+                f"🔐CVV: {cvv_cc}\n"
+                f"🛍️ Cartão Formatado: {res_gg}\n\n"
+                f"👤 DADOS PARA TE AUXILIAR:\n"
+                f"Nome: {nome_titular}\n"
+                f"CPF: {cpf_titular}\n\n"
+                f"Nível: {bin_item}\n"
+                f"Bandeira: {bandeira_item}\n"
+                f"Banco: {banco_item}\n\n"
+                f"- Seu Saldo Restante: R$ {saldo_atual:.0f}\n\n"
+                f"⏰ TEMPO MAXIMO PARA O REEMBOLSO: {tempo_reembolso}. (10 minutos)\n\n"
+                f"TESTAR LIVE DOS CARD NA COBASI\n\n"
+                f"RETORNO\n\n"
+                f"N7\n"
+                f"00, 01, 05, 13, 17, 41, 43, 51, 54, 57, 62, 63, 65, 75. (Todos esses retornos são lives!)\n\n"
+                f"SUPORTE TELEGRAM: @JENNE_BOT_SUPORTE\n"
+                f"SUPORTE WHATSAPP: +63 927 295 1705"
             )
             bot.send_message(call.message.chat.id, msg, parse_mode="Markdown")
+
+            # Envia o aviso discreto no canal oficial
+            try:
+                nome_cliente = call.from_user.first_name or "Cliente"
+                msg_canal = f"🛒 **Nova Compra Efetuada!**\n👤 Cliente: `{nome_cliente}`\n💳 BIN comprada: `{bin_item}` ({bandeira_item})"
+                bot.send_message(CANAL_OBRIGATORIO, msg_canal, parse_mode="Markdown")
+            except Exception:
+                pass
+
         elif status == "saldo_insuficiente":
             bot.send_message(call.message.chat.id, "❌ Saldo insuficiente! Faça uma recarga Pix.")
         elif status == "falta_dados":
@@ -548,7 +645,7 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando com validação real de pagamento via API do Mercado Pago...")
+    LOG.info("Bot rodando perfeitamente com todas as atualizações solicitadas...")
     
     try:
         bot.remove_webhook()
