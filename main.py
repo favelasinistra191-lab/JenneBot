@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Profissional • GGs com Dados Casados + Indicação por Depósito + Verificação Real Pix na API
+Versão Profissional Completa • GGs com Dados Casados + ElitePay
 """
 import os
 import logging
@@ -15,6 +15,10 @@ import requests
 import config
 import database as db
 
+# Configurações ElitePay
+ELITE_URL = "https://api.elitepaybr.com"
+ELITE_KEY = "eps_e5989dd11dc840f3967a1bf517277d8a0c729ffb39ec519652d125a25ad42d53"
+
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger("JenneBot")
 
@@ -23,11 +27,7 @@ db.criar_tabelas()
 
 app = Flask(__name__)
 
-# ID ou Link do Canal de Notificações / Trava
 CANAL_OBRIGATORIO = "https://t.me/+VNkIZojSrHs4NDJh"
-CANAL_ID_VERIFICACAO = -1002476591234  # Substitua pelo ID numérico do seu canal se preferir, ou o link trataremos via verificação de admin
-
-ACCESS_TOKEN = "APP_USR-249848378901175-080605-e67c3c2b3575d5a687864a126913a7ae-3171236437"
 
 @app.route('/')
 def home():
@@ -40,14 +40,11 @@ def run_web_server():
 
 def verificar_inscricao_canal(user_id):
     try:
-        # Tenta verificar se o usuário é membro do canal obrigatório
-        # Nota: O bot precisa ser admin do canal para checar.
         chat_member = bot.get_chat_member(CANAL_OBRIGATORIO, user_id)
         if chat_member.status in ['member', 'administrator', 'creator']:
             return True
     except Exception as e:
         LOG.warning(f"Erro ao verificar inscrição no canal: {e}")
-        # Se falhar a verificação exata por link privado, libera para evitar travamento, ou exige caso o ID esteja configurado.
         return True 
     return False
 
@@ -120,7 +117,6 @@ def cmd_start(message):
         primeiro_nome = message.from_user.first_name or "Cliente"
         username = message.from_user.username or ""
         
-        # Trava de Canal Obrigatório
         if not verificar_inscricao_canal(user_id):
             markup = types.InlineKeyboardMarkup(row_width=1)
             markup.add(
@@ -260,7 +256,6 @@ def processar_etapa2(message):
         )
         bot.reply_to(message, msg_sucesso, parse_mode="Markdown")
 
-        # Envia também para o canal oficial
         try:
             bot.send_message(CANAL_OBRIGATORIO, msg_sucesso, parse_mode="Markdown")
         except Exception:
@@ -447,7 +442,7 @@ def callback_query(call):
             types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu")
         )
         bot.edit_message_text(
-            text="💳 **RECARGA PIX • MERCADO PAGO**\n\n⚡ Pagamento instantâneo automatizado.\n🔥 *Promoção de saldo em dobro ativa!*",
+            text="💳 **RECARGA PIX • ELITEPAY**\n\n⚡ Pagamento instantâneo automatizado.\n🔥 *Promoção de saldo em dobro ativa!*",
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
             reply_markup=markup,
@@ -458,62 +453,50 @@ def callback_query(call):
         bot.answer_callback_query(call.id)
         valor = 10.0 if data == "pix_10" else 20.0
         
-        url = "https://api.mercadopago.com/v1/payments"
         headers = {
-            "Authorization": f"Bearer {ACCESS_TOKEN}",
-            "Content-Type": "application/json",
-            "X-Idempotency-Key": f"recarga-{user_id}-{valor}-{uuid.uuid4().hex[:6]}"
+            "Authorization": f"Bearer {ELITE_KEY}",
+            "Content-Type": "application/json"
         }
         
         payload = {
-            "transaction_amount": valor,
-            "description": f"Recarga JenneStore (R$ {valor})",
-            "payment_method_id": "pix",
-            "payer": {
-                "email": f"usuario_{user_id}@bot.com",
-                "first_name": call.from_user.first_name or "Cliente",
-                "identification": {"type": "CPF", "number": "00000000000"} 
-            }
+            "valor": valor,
+            "external_reference": f"recarga_{user_id}_{uuid.uuid4().hex[:6]}"
         }
 
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=10)
+            response = requests.post(f"{ELITE_URL}/pix/create", json=payload, headers=headers, timeout=10)
             dados_resposta = response.json()
             
-            if response.status_code in [200, 201]:
-                payment_id = dados_resposta.get("id")
-                point_of_interaction = dados_resposta.get("point_of_interaction", {})
-                qr_code = point_of_interaction.get("transaction_data", {}).get("qr_code")
+            if response.status_code in [200, 201] and "qr_code" in dados_resposta:
+                qr_code = dados_resposta["qr_code"]
+                txid = dados_resposta.get("txid") or dados_resposta.get("id")
                 
-                if qr_code and payment_id:
-                    mensagem_pix = (
-                        f"✅ **PIX GERADO COM SUCESSO!**\n\n"
-                        f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
-                        f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
-                        f"📲 *Pague no seu banco e clique em '🔄 Verificar Pagamento' abaixo.*"
-                    )
-                    markup = types.InlineKeyboardMarkup(row_width=1)
-                    markup.add(
-                        types.InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"verificar_{payment_id}_{valor}"),
-                        types.InlineKeyboardButton("🔙 Voltar", callback_data="menu_recarga")
-                    )
-                    bot.edit_message_text(text=mensagem_pix, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
-                else:
-                    bot.send_message(call.message.chat.id, "⚠️ Erro ao gerar QR Code.")
+                mensagem_pix = (
+                    f"✅ **PIX ELITEPAY GERADO!**\n\n"
+                    f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
+                    f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
+                    f"📲 *Pague no seu banco e clique em '🔄 Verificar Pagamento' abaixo.*"
+                )
+                markup = types.InlineKeyboardMarkup(row_width=1)
+                markup.add(
+                    types.InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"verificar_elite_{txid}_{valor}"),
+                    types.InlineKeyboardButton("🔙 Voltar", callback_data="menu_recarga")
+                )
+                bot.edit_message_text(text=mensagem_pix, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
             else:
-                erro_msg = dados_resposta.get("message", "Erro no Mercado Pago")
+                erro_msg = dados_resposta.get("message", "Erro ao gerar Pix na ElitePay")
                 bot.send_message(call.message.chat.id, f"❌ Erro: {erro_msg}")
         except Exception as e:
             bot.send_message(call.message.chat.id, f"❌ Erro de conexão: {e}")
 
-    elif data.startswith("verificar_"):
-        bot.answer_callback_query(call.id, "Consultando pagamento no banco...")
+    elif data.startswith("verificar_elite_"):
+        bot.answer_callback_query(call.id, "Consultando pagamento na ElitePay...")
         partes = data.split("_")
-        payment_id = partes[1]
-        valor = float(partes[2])
+        txid = partes[2]
+        valor = float(partes[3])
         
-        url_check = f"https://api.mercadopago.com/v1/payments/{payment_id}"
-        headers = {"Authorization": f"Bearer {ACCESS_TOKEN}"}
+        url_check = f"{ELITE_URL}/pix/check/{txid}"
+        headers = {"Authorization": f"Bearer {ELITE_KEY}"}
         
         try:
             resp = requests.get(url_check, headers=headers, timeout=10)
@@ -521,7 +504,7 @@ def callback_query(call):
                 pag_dados = resp.json()
                 status_pagamento = pag_dados.get("status")
                 
-                if status_pagamento == "approved":
+                if status_pagamento in ["approved", "pago", "CONCLUIDA"]:
                     valor_total = valor * 2
                     
                     dados = db.carregar_dados(forcar_atualizacao=True)
@@ -553,7 +536,7 @@ def callback_query(call):
                     markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
                     
                     bot.edit_message_text(
-                        text=f"🎉 **PAGAMENTO CONFIRMADO PELA API!**\n\nCrédito de R$ {valor:.2f} + Bônus adicionados.\n💰 **Novo Saldo:** `R$ {novo_saldo:.2f}`",
+                        text=f"🎉 **PAGAMENTO CONFIRMADO PELA ELITEPAY!**\n\nCrédito de R$ {valor:.2f} + Bônus adicionados.\n💰 **Novo Saldo:** `R$ {novo_saldo:.2f}`",
                         chat_id=call.message.chat.id,
                         message_id=call.message.message_id,
                         reply_markup=markup,
@@ -562,7 +545,7 @@ def callback_query(call):
                 else:
                     bot.answer_callback_query(call.id, "⚠️ Pagamento ainda não identificado. Pague o Pix e tente novamente.", show_alert=True)
             else:
-                bot.answer_callback_query(call.id, "❌ Erro ao consultar o pagamento na API.", show_alert=True)
+                bot.answer_callback_query(call.id, "❌ Erro ao consultar o pagamento na ElitePay.", show_alert=True)
         except Exception as e:
             bot.answer_callback_query(call.id, f"❌ Erro de conexão: {e}", show_alert=True)
 
@@ -622,7 +605,6 @@ def callback_query(call):
             )
             bot.send_message(call.message.chat.id, msg, parse_mode="Markdown")
 
-            # Envia o aviso discreto no canal oficial
             try:
                 nome_cliente = call.from_user.first_name or "Cliente"
                 msg_canal = f"🛒 **Nova Compra Efetuada!**\n👤 Cliente: `{nome_cliente}`\n💳 BIN comprada: `{bin_item}` ({bandeira_item})"
@@ -645,7 +627,7 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando perfeitamente com todas as atualizações solicitadas...")
+    LOG.info("Bot rodando perfeitamente com todas as funções e ElitePay integrada...")
     
     try:
         bot.remove_webhook()
