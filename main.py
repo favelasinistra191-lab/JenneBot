@@ -477,7 +477,8 @@ def cmd_pix_customizado(message):
     }
 
     try:
-        response = requests.post(f"{ELITE_URL}/pix/create", json=payload, headers=headers, timeout=15)
+        # Rota correta atualizada para evitar o Erro 404
+        response = requests.post("https://api.elitepaybr.com/v1/pix/qrcode", json=payload, headers=headers, timeout=15)
         
         LOG.info(f"Resposta bruta ElitePay: {response.status_code} - {response.text}")
         
