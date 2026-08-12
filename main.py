@@ -1,13 +1,13 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Profissional Completa • GGs com Dados Casados + ElitePay
+Versão Profissional Completa • GGs com Dados Casados + ElitePay (Webhook Automático)
 """
 import os
 import logging
 import threading
 import uuid
 from datetime import datetime, timedelta
-from flask import Flask
+from flask import Flask, request, jsonify
 import telebot
 from telebot import types
 import requests
@@ -32,6 +32,79 @@ CANAL_OBRIGATORIO = "https://t.me/+VNkIZojSrHs4NDJh"
 @app.route('/')
 def home():
     return "JenneStoreBot está rodando e acordado perfeitamente!"
+
+# Rota de Webhook que a ElitePay vai chamar automaticamente ao confirmar o pagamento
+@app.route('/webhook/elitepay', methods=['POST'])
+def webhook_elitepay():
+    try:
+        dados_notificacao = request.json
+        if not dados_notificacao:
+            return jsonify({"status": "error", "message": "Sem dados"}), 400
+
+        LOG.info(f"Webhook ElitePay recebido: {dados_notificacao}")
+
+        # Extrai o status e a referência externa enviada na criação do Pix
+        status_pagamento = dados_notificacao.get("status") or dados_notificacao.get("payment_status")
+        external_ref = dados_notificacao.get("external_reference") or dados_notificacao.get("txid")
+
+        # Verifica se o pagamento foi aprovado
+        if status_pagamento in ["approved", "pago", "CONCLUIDA", "PAID"]:
+            if external_ref and "recarga_" in str(external_ref):
+                # O formato esperado na external_reference é: recarga_{user_id}_{uuid}
+                partes = str(external_ref).split("_")
+                if len(partes) >= 2:
+                    user_id = int(partes[1])
+                    
+                    # Pega o valor pago enviado pela API (ou tenta deduzir)
+                    valor_pago = float(dados_notificacao.get("valor") or dados_notificacao.get("amount") or 0.0)
+                    
+                    if valor_pago > 0:
+                        valor_total = valor_pago * 2  # Bônus em dobro aplicado
+                        
+                        dados = db.carregar_dados(forcar_atualizacao=True)
+                        usuarios = dados.get("usuarios", [])
+                        
+                        usuario_encontrado = None
+                        for u in usuarios:
+                            if u["user_id"] == user_id:
+                                usuario_encontrado = u
+                                break
+
+                        if usuario_encontrado:
+                            usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + valor_total
+                            
+                            # Sistema de indicação (bônus de R$ 20 para quem indicou)
+                            indicado_por = usuario_encontrado.get("indicado_por")
+                            if indicado_por and not usuario_encontrado.get("indicacao_paga", False):
+                                usuario_encontrado["indicacao_paga"] = True
+                                for u_ind in usuarios:
+                                    if u_ind["user_id"] == indicado_por:
+                                        u_ind["saldo"] = float(u_ind.get("saldo", 0.0)) + 20.0
+                                        break
+
+                            db.salvar_dados(dados)
+                            novo_saldo = usuario_encontrado["saldo"]
+                            
+                            # Envia mensagem automática no Telegram avisando o usuário
+                            markup = types.InlineKeyboardMarkup()
+                            markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
+                            
+                            try:
+                                bot.send_message(
+                                    user_id,
+                                    f"🎉 **PAGAMENTO APROVADO AUTOMATICAMENTE!**\n\n"
+                                    f"💵 Recarga de R$ {valor_pago:.2f} + Bônus em dobro creditados!\n"
+                                    f"💰 **Novo Saldo:** `R$ {novo_saldo:.2f}`",
+                                    reply_markup=markup,
+                                    parse_mode="Markdown"
+                                )
+                            except Exception as e:
+                                LOG.error(f"Erro ao enviar mensagem de Pix automático para o usuário: {e}")
+
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        LOG.error(f"Erro no webhook da ElitePay: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 def run_web_server():
     port = int(os.environ.get("PORT", 8080))
@@ -379,6 +452,57 @@ def cmd_resgatar(message):
         bot.reply_to(message, f"❌ Erro: {e}")
 
 
+@bot.message_handler(commands=['pix'])
+def cmd_pix_customizado(message):
+    user_id = message.from_user.id
+    args = message.text.split()
+    
+    if len(args) < 2:
+        bot.reply_to(message, "⚠️ Informe o valor. Exemplo: `/pix 15` (Mínimo R$ 10,00)", parse_mode="Markdown")
+        return
+        
+    try:
+        valor = float(args[1].replace(',', '.'))
+    except ValueError:
+        bot.reply_to(message, "❌ Valor inválido. Use números, ex: `/pix 25`", parse_mode="Markdown")
+        return
+        
+    if valor < 10.0:
+        bot.reply_to(message, "⚠️ O valor mínimo para recarga via Pix é de **R$ 10,00**.", parse_mode="Markdown")
+        return
+
+    headers = {
+        "Authorization": f"Bearer {ELITE_KEY}",
+        "Content-Type": "application/json"
+    }
+    
+    # Geramos a referência incluindo o webhook_url se a API aceitar, ou configurada diretamente no painel deles
+    payload = {
+        "valor": valor,
+        "external_reference": f"recarga_{user_id}_{uuid.uuid4().hex[:6]}"
+    }
+
+    try:
+        response = requests.post(f"{ELITE_URL}/pix/create", json=payload, headers=headers, timeout=10)
+        dados_resposta = response.json()
+        
+        if response.status_code in [200, 201] and "qr_code" in dados_resposta:
+            qr_code = dados_resposta["qr_code"]
+            
+            mensagem_pix = (
+                f"✅ **PIX ELITEPAY GERADO!**\n\n"
+                f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
+                f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
+                f"📲 *Pague no seu banco. O saldo cairá **automaticamente** assim que o pagamento for aprovado!*"
+            )
+            bot.send_message(message.chat.id, mensagem_pix, parse_mode="Markdown")
+        else:
+            erro_msg = dados_resposta.get("message", "Erro ao gerar Pix na ElitePay")
+            bot.send_message(message.chat.id, f"❌ Erro: {erro_msg}")
+    except Exception as e:
+        bot.send_message(message.chat.id, f"❌ Erro de conexão com a API: {e}")
+
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
     user_id = call.from_user.id
@@ -435,119 +559,27 @@ def callback_query(call):
         
     elif data == "menu_recarga":
         bot.answer_callback_query(call.id)
+        msg_recarga = (
+            f"💳 **RECARGA PIX • ELITEPAY**\n\n"
+            f"⚡ Pagamento instantâneo automatizado.\n"
+            f"🔥 *Promoção de saldo em dobro ativa!*\n\n"
+            f"✍️ **Para fazer sua recarga, envie no chat o comando:**\n"
+            f"`/pix [valor]`\n\n"
+            f"💡 *Exemplo:* `/pix 15` ou `/pix 50`\n"
+            f"⚠️ *O valor mínimo é de R$ 10,00.*\n\n"
+            f"🔔 *Assim que o pagamento for realizado, o saldo cai na hora automaticamente!*"
+        )
         markup = types.InlineKeyboardMarkup(row_width=1)
         markup.add(
-            types.InlineKeyboardButton("💎 Recarregar R$ 10,00 (Dobro)", callback_data="pix_10"),
-            types.InlineKeyboardButton("💎 Recarregar R$ 20,00 (Dobro)", callback_data="pix_20"),
             types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu")
         )
         bot.edit_message_text(
-            text="💳 **RECARGA PIX • ELITEPAY**\n\n⚡ Pagamento instantâneo automatizado.\n🔥 *Promoção de saldo em dobro ativa!*",
+            text=msg_recarga,
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
             reply_markup=markup,
             parse_mode="Markdown"
         )
-
-    elif data in ["pix_10", "pix_20"]:
-        bot.answer_callback_query(call.id)
-        valor = 10.0 if data == "pix_10" else 20.0
-        
-        headers = {
-            "Authorization": f"Bearer {ELITE_KEY}",
-            "Content-Type": "application/json"
-        }
-        
-        payload = {
-            "valor": valor,
-            "external_reference": f"recarga_{user_id}_{uuid.uuid4().hex[:6]}"
-        }
-
-        try:
-            response = requests.post(f"{ELITE_URL}/pix/create", json=payload, headers=headers, timeout=10)
-            dados_resposta = response.json()
-            
-            if response.status_code in [200, 201] and "qr_code" in dados_resposta:
-                qr_code = dados_resposta["qr_code"]
-                txid = dados_resposta.get("txid") or dados_resposta.get("id")
-                
-                mensagem_pix = (
-                    f"✅ **PIX ELITEPAY GERADO!**\n\n"
-                    f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
-                    f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
-                    f"📲 *Pague no seu banco e clique em '🔄 Verificar Pagamento' abaixo.*"
-                )
-                markup = types.InlineKeyboardMarkup(row_width=1)
-                markup.add(
-                    types.InlineKeyboardButton("🔄 Verificar Pagamento", callback_data=f"verificar_elite_{txid}_{valor}"),
-                    types.InlineKeyboardButton("🔙 Voltar", callback_data="menu_recarga")
-                )
-                bot.edit_message_text(text=mensagem_pix, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
-            else:
-                erro_msg = dados_resposta.get("message", "Erro ao gerar Pix na ElitePay")
-                bot.send_message(call.message.chat.id, f"❌ Erro: {erro_msg}")
-        except Exception as e:
-            bot.send_message(call.message.chat.id, f"❌ Erro de conexão: {e}")
-
-    elif data.startswith("verificar_elite_"):
-        bot.answer_callback_query(call.id, "Consultando pagamento na ElitePay...")
-        partes = data.split("_")
-        txid = partes[2]
-        valor = float(partes[3])
-        
-        url_check = f"{ELITE_URL}/pix/check/{txid}"
-        headers = {"Authorization": f"Bearer {ELITE_KEY}"}
-        
-        try:
-            resp = requests.get(url_check, headers=headers, timeout=10)
-            if resp.status_code == 200:
-                pag_dados = resp.json()
-                status_pagamento = pag_dados.get("status")
-                
-                if status_pagamento in ["approved", "pago", "CONCLUIDA"]:
-                    valor_total = valor * 2
-                    
-                    dados = db.carregar_dados(forcar_atualizacao=True)
-                    usuarios = dados.get("usuarios", [])
-                    
-                    usuario_encontrado = None
-                    for u in usuarios:
-                        if u["user_id"] == user_id:
-                            usuario_encontrado = u
-                            break
-
-                    if usuario_encontrado:
-                        usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + valor_total
-                        
-                        indicado_por = usuario_encontrado.get("indicado_por")
-                        if indicado_por and not usuario_encontrado.get("indicacao_paga", False):
-                            usuario_encontrado["indicacao_paga"] = True
-                            for u_ind in usuarios:
-                                if u_ind["user_id"] == indicado_por:
-                                    u_ind["saldo"] = float(u_ind.get("saldo", 0.0)) + 20.0
-                                    break
-
-                        db.salvar_dados(dados)
-                        novo_saldo = usuario_encontrado["saldo"]
-                    else:
-                        novo_saldo = valor_total
-
-                    markup = types.InlineKeyboardMarkup()
-                    markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
-                    
-                    bot.edit_message_text(
-                        text=f"🎉 **PAGAMENTO CONFIRMADO PELA ELITEPAY!**\n\nCrédito de R$ {valor:.2f} + Bônus adicionados.\n💰 **Novo Saldo:** `R$ {novo_saldo:.2f}`",
-                        chat_id=call.message.chat.id,
-                        message_id=call.message.message_id,
-                        reply_markup=markup,
-                        parse_mode="Markdown"
-                    )
-                else:
-                    bot.answer_callback_query(call.id, "⚠️ Pagamento ainda não identificado. Pague o Pix e tente novamente.", show_alert=True)
-            else:
-                bot.answer_callback_query(call.id, "❌ Erro ao consultar o pagamento na ElitePay.", show_alert=True)
-        except Exception as e:
-            bot.answer_callback_query(call.id, f"❌ Erro de conexão: {e}", show_alert=True)
 
     elif data == "menu_gg":
         bot.answer_callback_query(call.id)
@@ -627,14 +659,15 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando perfeitamente com todas as funções e ElitePay integrada...")
+    LOG.info("Bot rodando com Webhook Automático da ElitePay...")
     
     try:
         bot.remove_webhook()
     except Exception:
         pass
 
-    while True:
+    whileType = True
+    while whileType:
         try:
             bot.infinity_polling(skip_pending=True, timeout=30, long_polling_timeout=30)
         except Exception as e:
