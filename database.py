@@ -106,13 +106,11 @@ def garantir_usuario(user_id, nome, username, indicado_por=None):
     
     for u in usuarios:
         if u["user_id"] == user_id:
-            # Atualizar indicação caso não tenha e o link tenha fornecido um válido
             if not u.get("indicado_por") and indicado_por and indicado_por != user_id:
                 u["indicado_por"] = indicado_por
                 salvar_dados(dados)
             return
             
-    # Criar novo usuário com suporte a indicação
     novo_usuario = {
         "user_id": user_id,
         "nome": nome,
@@ -194,8 +192,6 @@ def listar_estoque_gg_agrupado():
 def obter_historico_compras(user_id):
     dados = carregar_dados()
     estoque = dados.get("estoque", [])
-    # Filtra itens vendidos que pertencem ao usuário (ou registrados nas compras)
-    # Como o estoque atual marca apenas vendido=1, vamos registrar o comprador no item ao vender
     historico = [e for e in estoque if e.get("vendido") == 1 and e.get("comprado_por") == user_id]
     return historico
 
@@ -212,7 +208,7 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
             break
             
     if not user or user.get("saldo", 0.0) < preco:
-        return "saldo_insuficiente", None, None, None, None
+        return "saldo_insuficiente", None, None, None, None, None
         
     item_escolhido = None
     for item in estoque:
@@ -223,7 +219,7 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
             break
             
     if not item_escolhido:
-        return "esgotado", None, None, None, None
+        return "esgotado", None, None, None, None, None
         
     titular_escolhido = None
     if categoria == "gg":
@@ -232,11 +228,11 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
                 titular_escolhido = t
                 break
         if not titular_escolhido:
-            return "falta_dados", None, None, None, None
+            return "falta_dados", None, None, None, None, None
 
     user["saldo"] -= preco
     item_escolhido["vendido"] = 1
-    item_escolhido["comprado_por"] = user_id  # Registra o comprador para o histórico
+    item_escolhido["comprado_por"] = user_id
     
     res_dados = "N/A"
     if titular_escolhido:
@@ -244,4 +240,4 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
         res_dados = titular_escolhido["conteudo"]
 
     salvar_dados(dados)
-    return "ok", item_escolhido["conteudo"], res_dados, item_escolhido["banco"], item_escolhido["bandeira"]
+    return "ok", item_escolhido["conteudo"], res_dados, item_escolhido["banco"], item_escolhido["bandeira"], item_escolhido["bin"]
