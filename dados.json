@@ -4076,6 +4076,24 @@
             "banco": "BANCO BRADESCO S.A.",
             "bandeira": "VISA",
             "vendido": 0
+        },
+        {
+            "id": 437,
+            "categoria": "gg",
+            "conteudo": "4660790102915807|05|2030|667",
+            "bin": "466079",
+            "banco": "BANCO COOPERATIVO SICOOB S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
+        },
+        {
+            "id": 438,
+            "categoria": "gg",
+            "conteudo": "4660790102918587|05|2030|855",
+            "bin": "466079",
+            "banco": "BANCO COOPERATIVO SICOOB S.A.",
+            "bandeira": "VISA",
+            "vendido": 0
         }
     ],
     "admin_pendente": {},
