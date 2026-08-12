@@ -492,10 +492,11 @@ def cmd_pix_customizado(message):
             
             if qr_code:
                 mensagem_pix = (
-                    f"✅ **PIX GERADO!**\n\n"
+                    f"✅ **PIX ELITEPAY GERADO!**\n\n"
                     f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
                     f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
-                
+                    f"📲 *Pague no seu banco. O saldo cairá **automaticamente** assim que o pagamento for aprovado!*"
+                )
                 bot.send_message(message.chat.id, mensagem_pix, parse_mode="Markdown")
             else:
                 bot.send_message(message.chat.id, f"❌ A API gerou mas não retornou o código Copia e Cola.\nRetorno: {dados_resposta}")
