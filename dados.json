@@ -77,6 +77,14 @@
             "nome": "𝙿𝚄𝚃𝙾𝙰𝙳𝙼𝙲𝙱𝙳",
             "username": "PUTOADMCBD",
             "saldo": 0.0
+        },
+        {
+            "user_id": 8551041658,
+            "nome": "Elite",
+            "username": "elitepaybr",
+            "saldo": 0.0,
+            "indicado_por": null,
+            "indicacao_paga": false
         }
     ],
     "produtos": [],
