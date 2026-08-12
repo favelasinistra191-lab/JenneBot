@@ -1,6 +1,6 @@
 """
 Arquivo Principal - JenneStoreBot
-Versão Profissional Completa • GGs com Dados Casados + ElitePay (Webhook + Pix Seguro)
+Versão Profissional Limpa • GGs com Dados Casados + Pix Direto
 """
 import os
 import logging
@@ -15,9 +15,10 @@ import requests
 import config
 import database as db
 
-# Configurações ElitePay (Atualizadas conforme a documentação)
+# Configurações ElitePay
 ELITE_URL = "https://api.elitepaybr.com/api/v1/deposit"
-ELITE_KEY = "eps_e5989dd11dc840f3967a1bf517277d8a0c729ffb39ec519652d125a25ad42d53"
+ELITE_CLIENT_ID = "ep_70f82834297cc8f491f7daafd666ee1d"
+ELITE_CLIENT_SECRET = "eps_e5989dd11dc840f3967a1bf517277d8a0c729ffb39ec519652d125a25ad42d53"
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger("JenneBot")
@@ -40,7 +41,7 @@ def webhook_elitepay():
         if not dados_notificacao:
             return jsonify({"status": "error", "message": "Sem dados"}), 400
 
-        LOG.info(f"Webhook ElitePay recebido: {dados_notificacao}")
+        LOG.info(f"Webhook recebido: {dados_notificacao}")
 
         status_pagamento = dados_notificacao.get("status") or dados_notificacao.get("payment_status")
         external_ref = dados_notificacao.get("external_reference") or dados_notificacao.get("txid") or dados_notificacao.get("transactionId")
@@ -50,7 +51,6 @@ def webhook_elitepay():
                 partes = str(external_ref).split("_")
                 if len(partes) >= 2:
                     user_id = int(partes[1])
-                    
                     valor_pago = float(dados_notificacao.get("valor") or dados_notificacao.get("amount") or 0.0)
                     
                     if valor_pago > 0:
@@ -85,18 +85,18 @@ def webhook_elitepay():
                             try:
                                 bot.send_message(
                                     user_id,
-                                    f"🎉 **PAGAMENTO APROVADO AUTOMATICAMENTE!**\n\n"
-                                    f"💵 Recarga de R$ {valor_pago:.2f} + Bônus em dobro creditados!\n"
-                                    f"💰 **Novo Saldo:** `R$ {novo_saldo:.2f}`",
+                                    f"✅ **Pagamento Aprovado!**\n\n"
+                                    f"💵 Recarga de R$ {valor_pago:.2f} adicionada com sucesso!\n"
+                                    f"💰 **Saldo Atual:** `R$ {novo_saldo:.2f}`",
                                     reply_markup=markup,
                                     parse_mode="Markdown"
                                 )
                             except Exception as e:
-                                LOG.error(f"Erro ao enviar mensagem de Pix automático para o usuário: {e}")
+                                LOG.error(f"Erro ao enviar mensagem de Pix: {e}")
 
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        LOG.error(f"Erro no webhook da ElitePay: {e}")
+        LOG.error(f"Erro no webhook: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
 def run_web_server():
@@ -110,7 +110,7 @@ def verificar_inscricao_canal(user_id):
         if chat_member.status in ['member', 'administrator', 'creator']:
             return True
     except Exception as e:
-        LOG.warning(f"Erro ao verificar inscrição no canal: {e}")
+        LOG.warning(f"Erro ao verificar canal: {e}")
         return True 
     return False
 
@@ -464,10 +464,9 @@ def cmd_pix_customizado(message):
         bot.reply_to(message, "⚠️ O valor mínimo para recarga via Pix é de **R$ 10,00**.", parse_mode="Markdown")
         return
 
-    # Ajustado de acordo com a documentação correta da ElitePay
     headers = {
-        "x-client-id": ELITE_KEY,       # Conforme documentação oficial fornecida
-        "x-client-secret": ELITE_KEY,   # Caso utilize a mesma chave ou ajuste conforme seu painel
+        "x-client-id": ELITE_CLIENT_ID,
+        "x-client-secret": ELITE_CLIENT_SECRET,
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
@@ -475,39 +474,39 @@ def cmd_pix_customizado(message):
     payload = {
         "amount": valor,
         "description": f"Recarga Saldo Bot #{user_id}",
-        "payerName": message.from_user.first_name or "Cliente Telegram",
-        "payerDocument": "00000000000"  # Opcional/Genérico ou dados padrão exigidos pela API
+        "payerName": message.from_user.first_name or "Cliente",
+        "payerDocument": "00000000000"
     }
 
     try:
         response = requests.post(ELITE_URL, json=payload, headers=headers, timeout=15)
         
-        LOG.info(f"Resposta bruta ElitePay: {response.status_code} - {response.text}")
+        LOG.info(f"Resposta bruta: {response.status_code} - {response.text}")
         
         if response.status_code in [200, 201]:
             try:
                 dados_resposta = response.json()
             except Exception:
-                bot.send_message(message.chat.id, f"❌ Erro: A API respondeu com sucesso mas o formato não é JSON válido.\nResposta: {response.text[:200]}")
+                bot.send_message(message.chat.id, f"❌ Erro ao processar resposta do Pix.")
                 return
 
             qr_code = dados_resposta.get("copyPaste") or dados_resposta.get("qrcodeUrl")
             
             if qr_code:
                 mensagem_pix = (
-                    f"✅ **PIX ELITEPAY GERADO!**\n\n"
-                    f"💵 **Valor:** `R$ {valor:.2f}` (Bônus Dobro Aplicado)\n\n"
+                    f"💳 **PAGAMENTO PIX**\n\n"
+                    f"💵 **Valor:** `R$ {valor:.2f}`\n\n"
                     f"📋 **PIX COPIA E COLA:**\n`{qr_code}`\n\n"
-                    f"📲 *Pague no seu banco. O saldo cairá **automaticamente** assim que o pagamento for aprovado!*"
+                    f"*Basta copiar o código acima, pagar no aplicativo do seu banco e o saldo será creditado automaticamente.*"
                 )
                 bot.send_message(message.chat.id, mensagem_pix, parse_mode="Markdown")
             else:
-                bot.send_message(message.chat.id, f"❌ A API gerou mas não retornou o código Copia e Cola.\nRetorno: {dados_resposta}")
+                bot.send_message(message.chat.id, f"❌ Erro ao gerar o código Pix.")
         else:
-            bot.send_message(message.chat.id, f"❌ Erro na API (Status {response.status_code}):\n{response.text[:300]}")
+            bot.send_message(message.chat.id, f"❌ Erro ao conectar com o gateway de pagamento.")
             
     except Exception as e:
-        bot.send_message(message.chat.id, f"❌ Erro de conexão ao chamar a ElitePay: {e}")
+        bot.send_message(message.chat.id, f"❌ Erro de conexão.")
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -573,8 +572,7 @@ def callback_query(call):
             f"✍️ **Para fazer sua recarga, envie no chat o comando:**\n"
             f"`/pix [valor]`\n\n"
             f"💡 *Exemplo:* `/pix 15` ou `/pix 50`\n"
-            f"⚠️ *O valor mínimo é de R$ 10,00.*\n\n"
-            f"🔔 *Assim que o pagamento for realizado, o saldo cai na hora automaticamente!*"
+            f"⚠️ *O valor mínimo é de R$ 10,00.*"
         )
         markup = types.InlineKeyboardMarkup(row_width=1)
         markup.add(
@@ -666,7 +664,7 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando com Webhook Automático e URL de Deposit corrigida...")
+    LOG.info("Bot rodando com Pix limpo e otimizado...")
     
     try:
         bot.remove_webhook()
