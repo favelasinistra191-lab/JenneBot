@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 98.0
+            "saldo": 94.0
         },
         {
             "user_id": 7162864988,
@@ -4084,7 +4084,8 @@
             "bin": "466079",
             "banco": "BANCO COOPERATIVO SICOOB S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8776521959
         },
         {
             "id": 438,
@@ -4481,7 +4482,7 @@
         {
             "id": 77,
             "conteudo": "CLÁUDIO RUAN FERNANDES|190.856.836-45",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 78,
