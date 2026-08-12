@@ -15,8 +15,8 @@ import requests
 import config
 import database as db
 
-# Configurações ElitePay
-ELITE_URL = "https://api.elitepaybr.com"
+# Configurações ElitePay (Atualizadas conforme a documentação)
+ELITE_URL = "https://api.elitepaybr.com/api/v1/deposit"
 ELITE_KEY = "eps_e5989dd11dc840f3967a1bf517277d8a0c729ffb39ec519652d125a25ad42d53"
 
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +33,6 @@ CANAL_OBRIGATORIO = "https://t.me/+VNkIZojSrHs4NDJh"
 def home():
     return "JenneStoreBot está rodando e acordado perfeitamente!"
 
-# Rota de Webhook que a ElitePay vai chamar automaticamente ao confirmar o pagamento
 @app.route('/webhook/elitepay', methods=['POST'])
 def webhook_elitepay():
     try:
@@ -44,9 +43,9 @@ def webhook_elitepay():
         LOG.info(f"Webhook ElitePay recebido: {dados_notificacao}")
 
         status_pagamento = dados_notificacao.get("status") or dados_notificacao.get("payment_status")
-        external_ref = dados_notificacao.get("external_reference") or dados_notificacao.get("txid")
+        external_ref = dados_notificacao.get("external_reference") or dados_notificacao.get("txid") or dados_notificacao.get("transactionId")
 
-        if status_pagamento in ["approved", "pago", "CONCLUIDA", "PAID"]:
+        if status_pagamento in ["approved", "pago", "CONCLUIDA", "PAID", "APROVADO"]:
             if external_ref and "recarga_" in str(external_ref):
                 partes = str(external_ref).split("_")
                 if len(partes) >= 2:
@@ -465,20 +464,23 @@ def cmd_pix_customizado(message):
         bot.reply_to(message, "⚠️ O valor mínimo para recarga via Pix é de **R$ 10,00**.", parse_mode="Markdown")
         return
 
+    # Ajustado de acordo com a documentação correta da ElitePay
     headers = {
-        "Authorization": f"Bearer {ELITE_KEY}",
+        "x-client-id": ELITE_KEY,       # Conforme documentação oficial fornecida
+        "x-client-secret": ELITE_KEY,   # Caso utilize a mesma chave ou ajuste conforme seu painel
         "Content-Type": "application/json",
         "Accept": "application/json"
     }
     
     payload = {
-        "valor": valor,
-        "external_reference": f"recarga_{user_id}_{uuid.uuid4().hex[:6]}"
+        "amount": valor,
+        "description": f"Recarga Saldo Bot #{user_id}",
+        "payerName": message.from_user.first_name or "Cliente Telegram",
+        "payerDocument": "00000000000"  # Opcional/Genérico ou dados padrão exigidos pela API
     }
 
     try:
-        # Rota correta atualizada para evitar o Erro 404
-        response = requests.post("https://api.elitepaybr.com/v1/pix/qrcode", json=payload, headers=headers, timeout=15)
+        response = requests.post(ELITE_URL, json=payload, headers=headers, timeout=15)
         
         LOG.info(f"Resposta bruta ElitePay: {response.status_code} - {response.text}")
         
@@ -489,7 +491,7 @@ def cmd_pix_customizado(message):
                 bot.send_message(message.chat.id, f"❌ Erro: A API respondeu com sucesso mas o formato não é JSON válido.\nResposta: {response.text[:200]}")
                 return
 
-            qr_code = dados_resposta.get("qr_code") or dados_resposta.get("pix_copia_e_cola") or dados_resposta.get("copia_e_cola")
+            qr_code = dados_resposta.get("copyPaste") or dados_resposta.get("qrcodeUrl")
             
             if qr_code:
                 mensagem_pix = (
@@ -664,7 +666,7 @@ def callback_query(call):
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
-    LOG.info("Bot rodando com Webhook Automático e Proteção de JSON na ElitePay...")
+    LOG.info("Bot rodando com Webhook Automático e URL de Deposit corrigida...")
     
     try:
         bot.remove_webhook()
