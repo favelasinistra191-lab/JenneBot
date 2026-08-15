@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 21.0
+            "saldo": 17.0
         },
         {
             "user_id": 8240840152,
@@ -2764,7 +2764,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8694871225
         },
         {
             "id": 291,
@@ -4492,7 +4493,7 @@
         {
             "id": 78,
             "conteudo": "STELLA PIETRA AGATHA DA CUNHA|784.495.369-10",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 79,
