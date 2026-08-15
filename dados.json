@@ -139,6 +139,11 @@
             "codigo": "GIFT-52250767",
             "valor": 25.0,
             "usado": 1
+        },
+        {
+            "codigo": "GIFT-E8CB646C",
+            "valor": 20.0,
+            "usado": 0
         }
     ],
     "estoque": [
