@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 1.0
+            "saldo": 21.0
         },
         {
             "user_id": 8240840152,
@@ -143,7 +143,7 @@
         {
             "codigo": "GIFT-E8CB646C",
             "valor": 20.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
