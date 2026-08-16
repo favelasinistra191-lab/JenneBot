@@ -4260,13 +4260,7 @@
             "vendido": 0
         }
     ],
-    "admin_pendente": {
-        "admin_id": 8776521959,
-        "tipo": "gg",
-        "bin": "425850",
-        "banco": "BANCO SANTANDER S.A.",
-        "bandeira": "VISA"
-    },
+    "admin_pendente": {},
     "dados_titular": [
         {
             "id": 1,
