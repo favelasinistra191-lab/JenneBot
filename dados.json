@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 13.0
+            "saldo": 9.0
         },
         {
             "user_id": 8240840152,
@@ -4101,7 +4101,8 @@
             "bin": "466079",
             "banco": "BANCO COOPERATIVO SICOOB S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8694871225
         }
     ],
     "admin_pendente": {},
@@ -4504,7 +4505,7 @@
         {
             "id": 80,
             "conteudo": "PEDRO ARTHUR THIAGO ASSIS|818.270.907-58",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 81,
