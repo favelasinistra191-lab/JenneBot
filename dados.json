@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 17.0
+            "saldo": 13.0
         },
         {
             "user_id": 8240840152,
@@ -2774,7 +2774,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8694871225
         },
         {
             "id": 292,
@@ -4498,7 +4499,7 @@
         {
             "id": 79,
             "conteudo": "PIETRO ROBERTO ARAÚJO|047.500.165-60",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 80,
