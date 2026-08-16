@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 9.0
+            "saldo": 5.0
         },
         {
             "user_id": 8240840152,
@@ -2784,7 +2784,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8694871225
         },
         {
             "id": 293,
@@ -4510,7 +4511,7 @@
         {
             "id": 81,
             "conteudo": "HENRIQUE EDUARDO JOÃO DA MOTA|940.073.795-56",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 82,
