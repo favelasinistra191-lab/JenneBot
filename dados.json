@@ -10,7 +10,7 @@
             "user_id": 7162864988,
             "nome": "Ice",
             "username": "Ice_lws7",
-            "saldo": 4.0
+            "saldo": 0.0
         },
         {
             "user_id": 8824278848,
@@ -364,7 +364,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7162864988
         },
         {
             "id": 25,
@@ -4726,7 +4727,7 @@
         {
             "id": 83,
             "conteudo": "NATHAN VICTOR DRUMOND|264.605.896-90",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 84,
