@@ -22,7 +22,7 @@
             "user_id": 8694871225,
             "nome": "Lua ramos",
             "username": "",
-            "saldo": 5.0
+            "saldo": 1.0
         },
         {
             "user_id": 8240840152,
@@ -2526,7 +2526,8 @@
             "bin": "250060",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "MASTERCARD",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8694871225
         },
         {
             "id": 265,
@@ -4516,7 +4517,7 @@
         {
             "id": 82,
             "conteudo": "MANUEL BRUNO PEREIRA|745.406.420-57",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 83,
