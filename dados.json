@@ -109,6 +109,14 @@
             "saldo": 50.0,
             "indicado_por": null,
             "indicacao_paga": false
+        },
+        {
+            "user_id": 8409024404,
+            "nome": "57c",
+            "username": "",
+            "saldo": 0.0,
+            "indicado_por": null,
+            "indicacao_paga": false
         }
     ],
     "produtos": [],
