@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 144.0
+            "saldo": 140.0
         },
         {
             "user_id": 7162864988,
@@ -408,7 +408,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8776521959
         },
         {
             "id": 26,
@@ -4940,7 +4941,7 @@
         {
             "id": 84,
             "conteudo": "SÔNIA VERA ALANA MONTEIRO|376.054.825-31",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 85,
