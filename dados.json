@@ -130,7 +130,7 @@
             "user_id": 6566391964,
             "nome": "TOMTRAMPOS",
             "username": "tomtrampos71",
-            "saldo": 8.0,
+            "saldo": 4.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -510,7 +510,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 6566391964
         },
         {
             "id": 32,
@@ -5018,7 +5019,7 @@
         {
             "id": 90,
             "conteudo": "MURILO ALEXANDRE HUGO DUARTE|029.748.444-30",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 91,
