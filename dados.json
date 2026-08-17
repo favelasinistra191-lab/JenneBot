@@ -130,7 +130,7 @@
             "user_id": 6566391964,
             "nome": "TOMTRAMPOS",
             "username": "tomtrampos71",
-            "saldo": 20.0,
+            "saldo": 16.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -480,7 +480,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 6566391964
         },
         {
             "id": 29,
@@ -5000,7 +5001,7 @@
         {
             "id": 87,
             "conteudo": "MANOEL THIAGO SEVERINO PINTO|581.422.619-60",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 88,
