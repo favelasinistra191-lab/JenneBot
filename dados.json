@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 68.0
+            "saldo": 64.0
         },
         {
             "user_id": 8694871225,
@@ -550,7 +550,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8824278848
         },
         {
             "id": 36,
@@ -5042,7 +5043,7 @@
         {
             "id": 94,
             "conteudo": "GABRIELLY ELZA DA ROCHA|663.001.703-06",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 95,
