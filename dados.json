@@ -130,7 +130,7 @@
             "user_id": 6566391964,
             "nome": "TOMTRAMPOS",
             "username": "tomtrampos71",
-            "saldo": 16.0,
+            "saldo": 12.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -490,7 +490,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 6566391964
         },
         {
             "id": 30,
@@ -5006,7 +5007,7 @@
         {
             "id": 88,
             "conteudo": "SOPHIA CAROLINA SALES|228.813.621-92",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 89,
