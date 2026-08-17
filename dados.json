@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 140.0
+            "saldo": 136.0
         },
         {
             "user_id": 7162864988,
@@ -418,7 +418,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8776521959
         },
         {
             "id": 27,
@@ -4946,7 +4947,7 @@
         {
             "id": 85,
             "conteudo": "ALINE KAMILLY FREITAS|934.482.134-89",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 86,
