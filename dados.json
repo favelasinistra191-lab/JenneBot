@@ -130,7 +130,7 @@
             "user_id": 6566391964,
             "nome": "TOMTRAMPOS",
             "username": "tomtrampos71",
-            "saldo": 0.0,
+            "saldo": 20.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -219,7 +219,7 @@
         {
             "codigo": "GIFT-31097503",
             "valor": 20.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
