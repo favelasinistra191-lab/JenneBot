@@ -173,6 +173,11 @@
             "codigo": "GIFT-D873393B",
             "valor": 50.0,
             "usado": 1
+        },
+        {
+            "codigo": "GIFT-07C414C0",
+            "valor": 50.0,
+            "usado": 0
         }
     ],
     "estoque": [
