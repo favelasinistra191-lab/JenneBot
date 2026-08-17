@@ -117,6 +117,14 @@
             "saldo": 0.0,
             "indicado_por": null,
             "indicacao_paga": false
+        },
+        {
+            "user_id": 7966297639,
+            "nome": "Rn",
+            "username": "",
+            "saldo": 0.0,
+            "indicado_por": null,
+            "indicacao_paga": false
         }
     ],
     "produtos": [],
