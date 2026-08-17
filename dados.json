@@ -106,7 +106,7 @@
             "user_id": 8946583887,
             "nome": "Alma",
             "username": "",
-            "saldo": 0.0,
+            "saldo": 50.0,
             "indicado_por": null,
             "indicacao_paga": false
         }
@@ -177,7 +177,7 @@
         {
             "codigo": "GIFT-07C414C0",
             "valor": 50.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
