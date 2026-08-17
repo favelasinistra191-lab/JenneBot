@@ -16,7 +16,7 @@
             "user_id": 8824278848,
             "nome": "Matias",
             "username": "",
-            "saldo": 40.0
+            "saldo": 36.0
         },
         {
             "user_id": 8694871225,
@@ -620,7 +620,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8824278848
         },
         {
             "id": 43,
@@ -5084,7 +5085,7 @@
         {
             "id": 101,
             "conteudo": "JULIO MURILO TEIXEIRA|201.925.450-60",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 102,
