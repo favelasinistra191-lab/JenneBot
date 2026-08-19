@@ -173,6 +173,14 @@
             "saldo": 0.0,
             "indicado_por": null,
             "indicacao_paga": false
+        },
+        {
+            "user_id": 6159043127,
+            "nome": "𝑭𝑼𝑴𝑨𝑪̧𝑨 | 𝑻𝑹𝑨𝑴𝑷𝑶𝑺 | 𝑺𝑻 𝑫𝑨𝑺𝑶𝑹𝑻𝑬 | 𝑺𝑻 𝑪𝑫𝑴",
+            "username": "fmlaras7",
+            "saldo": 0.0,
+            "indicado_por": null,
+            "indicacao_paga": false
         }
     ],
     "produtos": [],
