@@ -210,7 +210,7 @@
             "user_id": 8087661794,
             "nome": "Joga",
             "username": "jogasett",
-            "saldo": 90.0
+            "saldo": 86.0
         }
     ],
     "produtos": [],
@@ -1485,7 +1485,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8087661794
         },
         {
             "id": 444,
@@ -2245,7 +2246,7 @@
         {
             "id": 116,
             "conteudo": "Emanuelly Giovanna Eliane Almeida|966.259.870-77",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 117,
