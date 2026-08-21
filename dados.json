@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 6.0,
+            "saldo": 10.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -210,7 +210,7 @@
             "user_id": 8087661794,
             "nome": "Joga",
             "username": "jogasett",
-            "saldo": 70.0
+            "saldo": 66.0
         }
     ],
     "produtos": [],
@@ -1599,7 +1599,7 @@
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
             "vendido": 1,
-            "comprado_por": 7820008937
+            "comprado_por": 8087661794
         },
         {
             "id": 456,
