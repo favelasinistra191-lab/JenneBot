@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 10.0,
+            "saldo": 6.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1665,7 +1665,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7820008937
         },
         {
             "id": 462,
@@ -2353,7 +2354,7 @@
         {
             "id": 134,
             "conteudo": "Thomas Miguel Thiago Araújo|703.005.268-49",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 135,
