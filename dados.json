@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 6.0,
+            "saldo": 2.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1684,7 +1684,8 @@
             "bin": "422061",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7820008937
         },
         {
             "id": 464,
@@ -2407,7 +2408,7 @@
         {
             "id": 135,
             "conteudo": "Cláudio Edson da Rocha|079.743.113-63",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 136,
