@@ -268,6 +268,56 @@
             "codigo": "GIFT-31097503",
             "valor": 20.0,
             "usado": 1
+        },
+        {
+            "codigo": "GIFT-F43D4E10",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-96C3EBD0",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-AD1FF432",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-6FAF1073",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-7B89EDB9",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-A33E9E7A",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-5E06059D",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-E811B94D",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-8984B452",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-8F43B62A",
+            "valor": 10.0,
+            "usado": 0
         }
     ],
     "estoque": [
