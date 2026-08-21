@@ -210,7 +210,7 @@
             "user_id": 8087661794,
             "nome": "Joga",
             "username": "jogasett",
-            "saldo": 26.0
+            "saldo": 22.0
         }
     ],
     "produtos": [],
@@ -1645,7 +1645,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8087661794
         },
         {
             "id": 460,
@@ -2341,7 +2342,7 @@
         {
             "id": 132,
             "conteudo": "Bárbara Cristiane Rosa Cardoso|714.823.333-09",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 133,
