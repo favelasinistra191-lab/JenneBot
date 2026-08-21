@@ -106,7 +106,7 @@
             "user_id": 8946583887,
             "nome": "Alma",
             "username": "",
-            "saldo": 38.0,
+            "saldo": 34.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1323,7 +1323,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8946583887
         },
         {
             "id": 440,
@@ -1913,7 +1914,7 @@
         {
             "id": 112,
             "conteudo": "André Matheus Pereira|321.342.956-27",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 113,
