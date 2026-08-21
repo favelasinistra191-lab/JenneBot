@@ -210,7 +210,7 @@
             "user_id": 8087661794,
             "nome": "Joga",
             "username": "jogasett",
-            "saldo": 40.0
+            "saldo": 50.0
         }
     ],
     "produtos": [],
@@ -314,7 +314,7 @@
         {
             "codigo": "GIFT-7B89EDB9",
             "valor": 10.0,
-            "usado": 0
+            "usado": 1
         },
         {
             "codigo": "GIFT-A33E9E7A",
