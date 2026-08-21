@@ -1,6 +1,6 @@
 """
-Módulo de Banco de Dados • JenneStoreBot
-Gerenciamento de Cache, GitHub, Usuários, Indicação Automática e Histórico
+Módulo de Banco de Dados • Don Ghost Bot
+Gerenciamento de Cache, GitHub, Usuários, Indicação Automática, Promoções, Histórico e Banner
 """
 import os
 import json
@@ -28,7 +28,12 @@ def carregar_dados(forcar_atualizacao=False):
         "estoque": [], 
         "gift_cards": [], 
         "dados_titular": [],
-        "admin_pendente": {}
+        "admin_pendente": {},
+        "configuracoes": {
+            "bonus_porcentagem": 100.0, 
+            "bonus_expira_em": None,
+            "banner_file_id": None  # Novo: Salva a foto do bot permanentemente
+        }
     }
     
     if not GITHUB_TOKEN:
@@ -37,6 +42,8 @@ def carregar_dados(forcar_atualizacao=False):
                 dados = json.load(f)
                 if "admin_pendente" not in dados:
                     dados["admin_pendente"] = {}
+                if "configuracoes" not in dados:
+                    dados["configuracoes"] = {"bonus_porcentagem": 100.0, "bonus_expira_em": None, "banner_file_id": None}
                 _cache_dados = dados
                 _ultimo_carregamento = agora
                 return dados
@@ -53,6 +60,8 @@ def carregar_dados(forcar_atualizacao=False):
             dados = json.loads(decoded_bytes.decode("utf-8"))
             if "admin_pendente" not in dados:
                 dados["admin_pendente"] = {}
+            if "configuracoes" not in dados:
+                dados["configuracoes"] = {"bonus_porcentagem": 100.0, "bonus_expira_em": None, "banner_file_id": None}
             _cache_dados = dados
             _ultimo_carregamento = agora
             return dados
