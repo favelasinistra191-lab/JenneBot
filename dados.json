@@ -2064,5 +2064,10 @@
             "conteudo": "Antônia Nina Helena Melo|755.603.818-10",
             "usado": 0
         }
-    ]
+    ],
+    "configuracoes": {
+        "bonus_porcentagem": 100.0,
+        "bonus_expira_em": null,
+        "banner_file_id": "AgACAgEAAxkBAAIHyWqIvvLSWM4m8dGpSnPIRtwcs2xSAAJsDWsbVn5IRMqWCb2VyliwAQADAgADeAADPQQ"
+    }
 }
