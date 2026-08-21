@@ -210,7 +210,7 @@
             "user_id": 8087661794,
             "nome": "Joga",
             "username": "jogasett",
-            "saldo": 66.0
+            "saldo": 62.0
         }
     ],
     "produtos": [],
@@ -1535,7 +1535,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8087661794
         },
         {
             "id": 449,
@@ -2281,7 +2282,7 @@
         {
             "id": 122,
             "conteudo": "Anderson Levi André Ribeiro|262.835.592-20",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 123,
