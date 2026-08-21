@@ -210,7 +210,7 @@
             "user_id": 8087661794,
             "nome": "Joga",
             "username": "jogasett",
-            "saldo": 54.0
+            "saldo": 50.0
         }
     ],
     "produtos": [],
@@ -1620,7 +1620,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8087661794
         },
         {
             "id": 458,
@@ -2299,7 +2300,7 @@
         {
             "id": 125,
             "conteudo": "Paulo Leonardo Monteiro|699.958.932-15",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 126,
