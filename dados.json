@@ -210,7 +210,7 @@
             "user_id": 8087661794,
             "nome": "Joga",
             "username": "jogasett",
-            "saldo": 30.0
+            "saldo": 26.0
         }
     ],
     "produtos": [],
@@ -1635,7 +1635,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8087661794
         },
         {
             "id": 459,
@@ -2335,7 +2336,7 @@
         {
             "id": 131,
             "conteudo": "Ruan Renan Novaes|253.677.422-89",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 132,
