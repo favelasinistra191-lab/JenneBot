@@ -210,7 +210,7 @@
             "user_id": 8087661794,
             "nome": "Joga",
             "username": "jogasett",
-            "saldo": 22.0
+            "saldo": 18.0
         }
     ],
     "produtos": [],
@@ -1655,7 +1655,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8087661794
         },
         {
             "id": 461,
@@ -2347,7 +2348,7 @@
         {
             "id": 133,
             "conteudo": "Cláudio André Lima|848.023.920-44",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 134,
