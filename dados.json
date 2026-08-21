@@ -205,6 +205,12 @@
             "saldo": 0.0,
             "indicado_por": null,
             "indicacao_paga": false
+        },
+        {
+            "user_id": 8087661794,
+            "nome": "Joga",
+            "username": "jogasett",
+            "saldo": 10.0
         }
     ],
     "produtos": [],
@@ -333,7 +339,7 @@
         {
             "codigo": "GIFT-8F43B62A",
             "valor": 10.0,
-            "usado": 0
+            "usado": 1
         },
         {
             "codigo": "GIFT-835584B9",
