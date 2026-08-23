@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 2.0,
+            "saldo": 12.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -414,7 +414,7 @@
         {
             "codigo": "GIFT-8F2E3852",
             "valor": 10.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
