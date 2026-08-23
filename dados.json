@@ -114,7 +114,7 @@
             "user_id": 8409024404,
             "nome": "57c",
             "username": "",
-            "saldo": 0.0,
+            "saldo": 15.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -427,7 +427,7 @@
         {
             "codigo": "GIFT-F35032CB",
             "valor": 15.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
