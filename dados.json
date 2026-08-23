@@ -211,6 +211,14 @@
             "nome": "Joga",
             "username": "jogasett",
             "saldo": 18.0
+        },
+        {
+            "user_id": 1745578373,
+            "nome": "Areda",
+            "username": "Lindestroy",
+            "saldo": 0.0,
+            "indicado_por": null,
+            "indicacao_paga": false
         }
     ],
     "produtos": [],
