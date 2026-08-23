@@ -390,6 +390,31 @@
             "codigo": "GIFT-9B8DC700",
             "valor": 10.0,
             "usado": 0
+        },
+        {
+            "codigo": "GIFT-EFA63795",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-2566B232",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-5CB953D1",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-0E376D06",
+            "valor": 10.0,
+            "usado": 0
+        },
+        {
+            "codigo": "GIFT-8F2E3852",
+            "valor": 10.0,
+            "usado": 0
         }
     ],
     "estoque": [
