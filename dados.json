@@ -114,7 +114,7 @@
             "user_id": 8409024404,
             "nome": "57c",
             "username": "",
-            "saldo": 49.0,
+            "saldo": 45.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1848,7 +1848,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8409024404
         },
         {
             "id": 476,
@@ -3203,7 +3204,7 @@
         {
             "id": 148,
             "conteudo": "BENTO ANTONIO IGOR PIRES|865.111.044-86",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 149,
