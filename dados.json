@@ -114,7 +114,7 @@
             "user_id": 8409024404,
             "nome": "57c",
             "username": "",
-            "saldo": 7.0,
+            "saldo": 3.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1813,7 +1813,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8409024404
         },
         {
             "id": 473,
@@ -3180,7 +3181,7 @@
         {
             "id": 145,
             "conteudo": "NATÁLIA ISABEL LARISSA CARDOSO|999.465.550-77",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 146,
