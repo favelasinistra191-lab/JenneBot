@@ -114,7 +114,7 @@
             "user_id": 8409024404,
             "nome": "57c",
             "username": "",
-            "saldo": 15.0,
+            "saldo": 11.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1793,7 +1793,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8409024404
         },
         {
             "id": 471,
@@ -3168,7 +3169,7 @@
         {
             "id": 143,
             "conteudo": "ELAINE PATRÍCIA REZENDE|620.434.663-64",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 144,
