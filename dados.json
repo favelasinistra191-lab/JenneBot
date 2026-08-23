@@ -114,7 +114,7 @@
             "user_id": 8409024404,
             "nome": "57c",
             "username": "",
-            "saldo": 45.0,
+            "saldo": 41.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1858,7 +1858,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8409024404
         },
         {
             "id": 477,
@@ -3209,7 +3210,7 @@
         {
             "id": 149,
             "conteudo": "NICOLE JOSEFA PINTO|028.648.374-20",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 150,
