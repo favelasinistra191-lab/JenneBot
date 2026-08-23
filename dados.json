@@ -3117,8 +3117,8 @@
         }
     ],
     "configuracoes": {
-        "bonus_porcentagem": 100.0,
-        "bonus_expira_em": null,
+        "bonus_porcentagem": 50.0,
+        "bonus_expira_em": 1787883070.8260508,
         "banner_file_id": "AgACAgEAAxkBAAIHyWqIvvLSWM4m8dGpSnPIRtwcs2xSAAJsDWsbVn5IRMqWCb2VyliwAQADAgADeAADPQQ"
     }
 }
