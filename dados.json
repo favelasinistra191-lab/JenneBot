@@ -423,6 +423,11 @@
             "codigo": "GIFT-8F2E3852",
             "valor": 10.0,
             "usado": 1
+        },
+        {
+            "codigo": "GIFT-F35032CB",
+            "valor": 15.0,
+            "usado": 0
         }
     ],
     "estoque": [
