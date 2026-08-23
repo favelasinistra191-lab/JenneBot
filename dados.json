@@ -106,7 +106,7 @@
             "user_id": 8946583887,
             "nome": "Alma",
             "username": "",
-            "saldo": 14.0,
+            "saldo": 10.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1758,7 +1758,8 @@
             "bin": "422061",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8946583887
         },
         {
             "id": 468,
@@ -3145,7 +3146,7 @@
         {
             "id": 140,
             "conteudo": "Daiane Maitê da Mata|364.828.235-21",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 141,
