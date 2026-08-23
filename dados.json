@@ -46,7 +46,7 @@
             "user_id": 6664117618,
             "nome": "TF",
             "username": "",
-            "saldo": 100.0
+            "saldo": 96.0
         },
         {
             "user_id": 6025773056,
@@ -1823,7 +1823,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 6664117618
         },
         {
             "id": 474,
@@ -3186,7 +3187,7 @@
         {
             "id": 146,
             "conteudo": "IAGO BRYAN MOREIRA|554.499.781-03",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 147,
