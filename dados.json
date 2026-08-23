@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 42.0,
+            "saldo": 52.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -394,7 +394,7 @@
         {
             "codigo": "GIFT-EFA63795",
             "valor": 10.0,
-            "usado": 0
+            "usado": 1
         },
         {
             "codigo": "GIFT-2566B232",
