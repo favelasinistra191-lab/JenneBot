@@ -114,7 +114,7 @@
             "user_id": 8409024404,
             "nome": "57c",
             "username": "",
-            "saldo": 11.0,
+            "saldo": 7.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1803,7 +1803,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8409024404
         },
         {
             "id": 472,
@@ -3174,7 +3175,7 @@
         {
             "id": 144,
             "conteudo": "ANTÔNIA RAYSSA DA CRUZ|022.508.126-16",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 145,
