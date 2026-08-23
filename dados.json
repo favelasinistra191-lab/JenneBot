@@ -106,7 +106,7 @@
             "user_id": 8946583887,
             "nome": "Alma",
             "username": "",
-            "saldo": 18.0,
+            "saldo": 14.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1748,7 +1748,8 @@
             "bin": "422061",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8946583887
         },
         {
             "id": 467,
@@ -3139,7 +3140,7 @@
         {
             "id": 139,
             "conteudo": "Benedita Eduarda Liz Almada|142.095.907-70",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 140,
