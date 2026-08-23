@@ -106,7 +106,7 @@
             "user_id": 8946583887,
             "nome": "Alma",
             "username": "",
-            "saldo": 10.0,
+            "saldo": 6.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -1768,7 +1768,8 @@
             "bin": "422061",
             "banco": "BANCO DO BRASIL / GERAL",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8946583887
         },
         {
             "id": 469,
@@ -3151,7 +3152,7 @@
         {
             "id": 141,
             "conteudo": "Antônia Nina Helena Melo|755.603.818-10",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 142,
