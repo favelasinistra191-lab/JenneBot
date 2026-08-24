@@ -219,6 +219,14 @@
             "saldo": 0.0,
             "indicado_por": null,
             "indicacao_paga": false
+        },
+        {
+            "user_id": 1816743906,
+            "nome": "Madruga",
+            "username": "madruguinha57",
+            "saldo": 0.0,
+            "indicado_por": null,
+            "indicacao_paga": false
         }
     ],
     "produtos": [],
