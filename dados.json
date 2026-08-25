@@ -40,7 +40,7 @@
             "user_id": 7847826722,
             "nome": "Indio",
             "username": "",
-            "saldo": 18.0
+            "saldo": 14.0
         },
         {
             "user_id": 6664117618,
@@ -2271,7 +2271,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7847826722
         },
         {
             "id": 521,
@@ -3271,7 +3272,7 @@
         {
             "id": 158,
             "conteudo": "EDUARDA SARA SARA CASTRO|175.635.979-21",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 159,
