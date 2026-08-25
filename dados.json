@@ -40,7 +40,7 @@
             "user_id": 7847826722,
             "nome": "Indio",
             "username": "",
-            "saldo": 30.0
+            "saldo": 26.0
         },
         {
             "user_id": 6664117618,
@@ -1916,7 +1916,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7847826722
         },
         {
             "id": 482,
@@ -3253,7 +3254,7 @@
         {
             "id": 155,
             "conteudo": "AUGUSTO JUAN DA ROCHA|095.413.037-57",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 156,
