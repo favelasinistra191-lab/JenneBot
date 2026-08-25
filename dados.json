@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 44.0,
+            "saldo": 40.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -2247,7 +2247,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7820008937
         },
         {
             "id": 519,
@@ -3235,7 +3236,7 @@
         {
             "id": 152,
             "conteudo": "CAIO LUCAS CAMPOS|049.906.805-02",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 153,
