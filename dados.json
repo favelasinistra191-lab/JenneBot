@@ -40,7 +40,7 @@
             "user_id": 7847826722,
             "nome": "Indio",
             "username": "",
-            "saldo": 22.0
+            "saldo": 18.0
         },
         {
             "user_id": 6664117618,
@@ -1926,7 +1926,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7847826722
         },
         {
             "id": 483,
@@ -3265,7 +3266,7 @@
         {
             "id": 157,
             "conteudo": "ANDREA TATIANE NASCIMENTO|662.193.627-30",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 158,
