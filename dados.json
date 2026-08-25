@@ -40,7 +40,7 @@
             "user_id": 7847826722,
             "nome": "Indio",
             "username": "",
-            "saldo": 14.0
+            "saldo": 10.0
         },
         {
             "user_id": 6664117618,
@@ -2281,7 +2281,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7847826722
         },
         {
             "id": 522,
@@ -3277,7 +3278,7 @@
         {
             "id": 159,
             "conteudo": "HELOISA FRANCISCA LAÍS GOMES|358.106.994-64",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 160,
