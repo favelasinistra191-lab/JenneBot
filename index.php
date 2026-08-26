@@ -1,4 +1,8 @@
 <?php
+// Carrega a API do PagSeguro para o index poder usá-la
+include 'api-pagseguro.php';
+
+// (O restante do seu código antigo continua logo abaixo...)
 // ============================================
 // 🌬️ VENTANIA SAGAZ - PP CHECKER v1.0
 // ============================================
