@@ -242,23 +242,18 @@ try {
                 $headersAuth[] = 'Authorization: Bearer ' . $tokenApi;
             }
 
-            // Endpoint de testes / produção da API de pedidos do PagBank
-            $urlPs = 'https://api.pagseguro.com/orders'; 
-            $r = curlJson($urlPs, 'POST', json_encode($payload, JSON_UNESCAPED_UNICODE), $headersAuth);
-
-            if ($r['code'] !== 200 && $r['code'] !== 201) {
+                        if ($r['code'] !== 200 && $r['code'] !== 201) {
                 // Tenta classificar o erro retornado mesmo com HTTP diferente de 200
                 $classErr = classificarRetornoPS($r['body']);
                 if ($classErr['rc'] === 'RC_NA' || $classErr['rc'] === 'ERRO') {
                     $classErr['msg'] = 'HTTP ' . $r['code'] . ' - Erro de conexão ou credencial inválida';
                 }
                 $classErr['card'] = $numero;
-                $classErr['exp' => $mes . substr($ano, -2);
+                $classErr['exp'] = $mes . substr($ano, -2);
                 $classErr['cvc'] = $cvv;
                 $classErr['tempo'] = round(microtime(true) - $inicio, 2);
                 jsonResp($classErr);
             }
-
             $resultadoClassificado = classificarRetornoPS($r['body']);
             $resultadoClassificado['card'] = $numero;
             $resultadoClassificado['exp'] = $mes . substr($ano, -2);
