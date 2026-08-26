@@ -1,11 +1,24 @@
 <?php
-// Carrega a API do PagSeguro para o index poder usá-la
+// Carrega a API do PagSeguro
 include 'api-pagseguro.php';
 
-// (O restante do seu código antigo continua logo abaixo...)
-// ============================================
-// 🌬️ VENTANIA SAGAZ - PP CHECKER v1.0
-// ============================================
+// Se o formulário foi enviado, o PHP processa aqui:
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $cc      = $_POST['cc'] ?? '';
+    $mes     = $_POST['mes'] ?? '';
+    $ano     = $_POST['ano'] ?? '';
+    $cvv     = $_POST['cvv'] ?? '';
+    $gateway = $_POST['gateway'] ?? 'cakto';
+
+    if (!empty($cc)) {
+        if ($gateway == 'pagseguro') {
+            $cartaoCriptografado = criptografarCartao($cc, $mes, $ano, $cvv);
+            // Aqui vai a sua requisição cURL para a API do PagSeguro usando $cartaoCriptografado
+        } else {
+            // Aqui continua o fluxo normal da Cakto
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
