@@ -747,21 +747,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 const cartao = linhas[i];
                 progressStatus.textContent = 'Verificando ' + (i + 1) + '/' + total + '...';
                 progressFill.style.width = Math.round((i / total) * 100) + '%';
-                progressText.textContent = Math.round((i / total) * 100) + '%';
+                            try {
+                const controller = new AbortController();
+                const timer = setTimeout(() => controller.abort(), 90000);
+                
+                // Identifica qual gateway está selecionado na tela
+                const gatewaySelecionado = document.getElementById('gatewaySelect').value;
 
-                try {
-                    const controller = new AbortController();
-                    const timer = setTimeout(() => controller.abort(), 90000);
-                    const resp = await fetch('api-caktohttp-lite.php', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ action: 'testar', card: cartao }),
-                        signal: controller.signal
-                    });
-                    clearTimeout(timer);
-                    const data = await resp.json();
-
-                    const item = {
+                const resp = await fetch('api-caktohttp-lite.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        action: 'testar', 
+                        card: cartao, 
+                        gateway: gatewaySelecionado 
+                    }),
+                    signal: controller.signal
+                });
+                clearTimeout(timer);
+                const data = await resp.json();
                         cartao: cartao,
                         mensagem: data.msg || data.error || '—',
                         tempo: data.tempo != null ? data.tempo : 0,
