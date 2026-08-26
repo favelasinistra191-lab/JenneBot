@@ -485,6 +485,14 @@ include 'api-pagseguro.php';
             <textarea id="cardInput" placeholder="Formato: Numero|Mes|Ano|CVV&#10;&#10;4111111111111111|12|2026|123&#10;5555555555554444|10|2025|456"></textarea>
             <div class="hint">Dica: cole um por linha. Ctrl+Enter para rodar.</div>
 
+            <!-- Cole o seletor aqui em cima do botão Rodar -->
+<div style="margin: 15px 0; text-align: left;">
+    <label style="color: #00ffcc; font-weight: bold; display: block; margin-bottom: 5px;">Escolher Gateway:</label>
+    <select id="gatewaySelect" style="width: 100%; padding: 12px; background: #1a1a1a; color: #fff; border: 1px solid #333; border-radius: 6px;">
+        <option value="cakto">Cakto</option>
+        <option value="pagseguro">PagSeguro</option>
+    </select>
+</div>
             <div class="actions">
                 <button class="btn" id="btnExecutar" onclick="verificarCartoes()">▶ Rodar</button>
             </div>
