@@ -702,12 +702,20 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
 
         function renderizar() {
-            function renderItem(r, cls) {
-                var label = '';
-                if (r.tipo === 'live_cvv') label = '<span style="color:var(--gold)">[LIVE CVV]</span> ';
-                if (r.tipo === 'live_invalid') label = '<span style="color:var(--gold)">[LIVE INVALID DATA]</span> ';
-                return '<div class="result-item ' + cls + '"><div class="r-card">' + label + esc(r.cartao) + '</div><div class="r-msg">' + esc(r.mensagem) + '</div><div class="r-time">' + r.tempo + 's</div></div>';
-            }
+                function renderItem(r, cls) {
+        let label = '';
+        // Adiciona identificação visual clara do Gateway e o código do retorno da operadora
+        let gatewayTag = r.gateway ? `[${r.gateway.toUpperCase()}] ` : '[CAKTO] ';
+        let msgRetorno = r.mensagem ? ` - ${r.mensagem} (${r.codigo || 'APROVADO'})` : '';
+
+        if (r.tipo === 'live_cvv') label = `<span style="color:var(--gold)">${gatewayTag}[LIVE CVV]${msgRetorno}</span> `;
+        if (r.tipo === 'live_invalid') label = `<span style="color:var(--gold)">${gatewayTag}[LIVE APROVADO]${msgRetorno}</span> `;
+        if (r.tipo === 'live') label = `<span style="color:var(--live)">${gatewayTag}[LIVE 3DS/VBV]${msgRetorno}</span> `;
+        if (r.tipo === 'die') label = `<span style="color:var(--die)">${gatewayTag}[REJEITADO]${msgRetorno}</span> `;
+        if (r.tipo === 'analise') label = `<span style="color:var(--ana)">${gatewayTag}[ANÁLISE]${msgRetorno}</span> `;
+        
+        return `<div class="r-item ${cls}"><div class="r-card">${label} + esc(r.cartao) + </div></div>`;
+    }
             listLives.innerHTML = groups.lives.length
                 ? groups.lives.map(r => renderItem(r, 'live')).join('')
                 : '<div class="empty">Nenhuma live</div>';
