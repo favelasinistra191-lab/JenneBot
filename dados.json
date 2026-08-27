@@ -4,7 +4,7 @@
             "user_id": 8776521959,
             "nome": "JenneStoreBott",
             "username": "",
-            "saldo": 128.0
+            "saldo": 124.0
         },
         {
             "user_id": 7162864988,
@@ -2299,7 +2299,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 8776521959
         },
         {
             "id": 523,
@@ -3291,7 +3292,7 @@
         {
             "id": 160,
             "conteudo": "MARIAH ANTÔNIA ELAINE FERREIRA|995.950.141-84",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 161,
