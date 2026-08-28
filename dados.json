@@ -162,7 +162,7 @@
             "user_id": 8272971037,
             "nome": "",
             "username": "",
-            "saldo": 0.0,
+            "saldo": 300.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -503,7 +503,7 @@
         {
             "codigo": "GIFT-2CB96851",
             "valor": 300.0,
-            "usado": 0
+            "usado": 1
         }
     ],
     "estoque": [
