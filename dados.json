@@ -499,6 +499,11 @@
             "codigo": "GIFT-974D135E",
             "valor": 30.0,
             "usado": 0
+        },
+        {
+            "codigo": "GIFT-2CB96851",
+            "valor": 300.0,
+            "usado": 0
         }
     ],
     "estoque": [
