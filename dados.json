@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 28.0,
+            "saldo": 24.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -2007,7 +2007,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7820008937
         },
         {
             "id": 484,
@@ -3372,7 +3373,7 @@
         {
             "id": 163,
             "conteudo": "CECÍLIA SANDRA NAIR MENDES|270.255.313-32",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 164,
