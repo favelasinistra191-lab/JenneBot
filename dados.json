@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 8.0,
+            "saldo": 4.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -2027,7 +2027,8 @@
             "bin": "422061",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7820008937
         },
         {
             "id": 486,
@@ -3402,7 +3403,7 @@
         {
             "id": 168,
             "conteudo": "RAFAEL LORENZO HENRY DA ROSA|716.506.739-65",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 169,
