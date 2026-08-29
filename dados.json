@@ -194,7 +194,7 @@
             "user_id": 7820008937,
             "nome": "😈",
             "username": "ADLZERO71",
-            "saldo": 20.0,
+            "saldo": 16.0,
             "indicado_por": null,
             "indicacao_paga": false
         },
@@ -2394,7 +2394,8 @@
             "bin": "425850",
             "banco": "BANCO SANTANDER S.A.",
             "bandeira": "VISA",
-            "vendido": 0
+            "vendido": 1,
+            "comprado_por": 7820008937
         },
         {
             "id": 526,
@@ -3384,7 +3385,7 @@
         {
             "id": 165,
             "conteudo": "SEVERINO IGOR SILVA|896.896.357-60",
-            "usado": 0
+            "usado": 1
         },
         {
             "id": 166,
