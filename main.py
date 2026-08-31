@@ -513,9 +513,8 @@ def callback_query(call):
         if not bins_disponiveis:
             bot.answer_callback_query(call.id, "⚠️ No momento não há nenhuma GG disponível em estoque!", show_alert=True)
             return
-
-        markup_gg = types.InlineKeyboardMarkup(row_width=1)
-        try:
+            markup_gg = types.InlineKeyboardMarkup(row_width=1)
+    try:
         bot.edit_message_caption(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
@@ -524,6 +523,7 @@ def callback_query(call):
             parse_mode="Markdown"
         )
     except Exception:
+        pass
         try:
             bot.edit_message_text(
                 text="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
