@@ -262,28 +262,35 @@ def callback_verificar_inscricao(call):
     else:
         bot.answer_callback_query(call.id, "⚠️ Você ainda não entrou no canal!", show_alert=True)
 
-@bot.message_handler(commands=['admin', 'painel'])
-def cmd_admin(message):
+@bot.message_handler(commands=['abastecer'])
+def cmd_abastecer(message):
     if message.from_user.id != config.ADMIN_ID:
         return
-    total_vendas, faturamento, clientes = db.obter_dados_relatorio()
-    dados = db.carregar_dados()
-    cfg = dados.get("configuracoes", {})
-    p_bonus = cfg.get("bonus_porcentagem", 100.0)
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        bot.reply_to(message, "⚠️ Use: `/abastecer [BIN]` e envie as linhas na mensagem seguinte.", parse_mode="Markdown")
+        return
+    bin_alvo = "".join(filter(str.isdigit, args[1]))[:6]
     
-    texto = (
-        f"👑 **Painel Administrativo • Don Ghost**\n\n"
-        f"📊 Clientes: `{clientes}` | Vendas: `{total_vendas}` | Faturamento: `R$ {faturamento:.2f}`\n"
-        f"⚡ Bônus Atual Ativo: `{p_bonus:.0f}%`\n\n"
-        f"⚙️ **Comandos úteis de Admin:**\n"
-        f"• `/abastecer [bin]` - Adicionar GGs em lote\n"
-        f"• `/set_preco [bin] [valor]` - Definir preço de uma BIN\n"
-        f"• `/set_bonus [porcentagem] [dias]` - Configurar bônus\n"
-        f"• `/add_dados` - Adicionar dados do titular\n"
-        f"• `/gerar_gift [qtd] [valor]` - Gerar gifts\n"
-        f"• `/limpar_estoque` - Limpar vendidos"
-    )
-    bot.send_message(message.chat.id, texto, parse_mode="Markdown")
+    # Salva o estado para aguardar o texto com as GGs na próxima mensagem
+    ESTADOS_USUARIO[message.from_user.id] = {"acao": "abastecer_gg", "bin": bin_alvo}
+    bot.reply_to(message, f"📥 Envie agora o texto com as GGs para a BIN `{bin_alvo}`.", parse_mode="Markdown")
+
+@bot.message_handler(func=lambda m: m.from_user.id in ESTADOS_USUARIO)
+def receber_texto_abastecer(message):
+    estado = ESTADOS_USUARIO.pop(message.from_user.id, None)
+    if not estado:
+        return
+    
+    texto_bruto = message.text or ""
+    linhas = [l.strip() for l in texto_bruto.split("\n") if l.strip()]
+    if not linhas:
+        bot.reply_to(message, "❌ Nenhuma linha válida encontrada.")
+        return
+        
+    bin_alvo = estado["bin"]
+    db.adicionar_lote_estoque(linhas, categoria="gg", bin=bin_alvo)
+    bot.reply_to(message, f"✅ Sucesso! Adicionadas {len(linhas)} GGs na BIN `{bin_alvo}`.", parse_mode="Markdown")
 
 @bot.message_handler(commands=['abastecer'])
 def cmd_abastecer(message):
@@ -523,13 +530,15 @@ def callback_query(call):
             return
 
         markup_gg = types.InlineKeyboardMarkup(row_width=1)
-        for bin_code, info in bins_disponiveis.items():
-            preco_bin = db.obter_preco_bin(bin_code)
-            texto_botao = f"💳 {info['bandeira']} - {info['banco']} ({bin_code[:4]}**) | Qtd: {info['quantidade']} | R$ {preco_bin:.2f}"
-            markup_gg.add(types.InlineKeyboardButton(texto_botao, callback_data=f"comprar_gg_{bin_code}"))
-
-        markup_gg.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
-        
+            try:
+        bot.edit_message_caption(
+            chat_id=call.message.chat.id,
+            message_id=call.message.message_id,
+            caption="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
+            reply_markup=markup_gg,
+            parse_mode="Markdown"
+        )
+    except Exception:
         try:
             bot.edit_message_text(
                 text="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
@@ -538,6 +547,14 @@ def callback_query(call):
                 reply_markup=markup_gg,
                 parse_mode="Markdown"
             )
+        except Exception:
+            bot.send_message(
+                call.message.chat.id,
+                "💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
+                reply_markup=markup_gg,
+                parse_mode="Markdown"
+            )
+
         except Exception:
             bot.send_message(
                 call.message.chat.id,
