@@ -546,27 +546,7 @@ def callback_query(call):
         for item in historico[-10:]:
             texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
         bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
-        
-    elif data == "menu_recarga":
-        msg_recarga = f"💳 **RECARGA PIX**\n\n⚡ Pagamento automatizado via Mercado Pago.\n\n✍️ **Envie no chat:**\n`/pix [valor]`\n💡 *Ex:* `/pix 15`"
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
-        try:
-            bot.edit_message_text(text=msg_recarga, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup, parse_mode="Markdown")
-        except:
-            bot.send_message(call.message.chat.id, msg_recarga, reply_markup=markup, parse_mode="Markdown")
 
-    elif data == "menu_gg":
-        ggs = db.listar_estoque_gg_agrupado()
-        if not ggs:
-            bot.send_message(call.message.chat.id, "❌ Sem GGs disponíveis no momento.")
-            return
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        for bin_code, bandeira, total_qtd, preco_bin in ggs:
-            markup.add(types.InlineKeyboardButton(f"💳 {bandeira} ({bin_code}) • Estoque: {total_qtd} (R$ {preco_bin:.2f})", callback_data=f"comprar_gg_{bin_code}"))
-        markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
-        bot.send_message(call.message.chat.id, "💳 **SELECIONE A BIN:**", reply_markup=markup, parse_mode="Markdown")
-        
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
         preco_bin = db.obter_preco_bin(bin_escolhida)
@@ -597,15 +577,15 @@ def callback_query(call):
                 f"💰 Seu Saldo Restante: R$ {saldo_atual:.2f}\n\n"
                 f"⏰ TEMPO MAXIMO PARA REEMBOLSO: {tempo_reembolso} (10 minutos)"
             )
-            bot.send_message(call.message.chat.id, msg, parse_message="Markdown")
-                elif status == "saldo_insuficiente":
+            bot.send_message(call.message.chat.id, msg, parse_mode="Markdown")
+        elif status == "saldo_insuficiente":
             bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
         elif status == "falta_dados":
             bot.send_message(call.message.chat.id, "⚠️ Estoque sem dados de titular suficientes.")
         else:
             bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
             
-       if data == "voltar_menu":
+    elif data == "voltar_menu":
         text, markup = main_menu(user_id)
         try: 
             bot.delete_message(call.message.chat.id, call.message.message_id)
@@ -622,7 +602,7 @@ def callback_query(call):
                 bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
         else:
             bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-            
+
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     LOG.info("Bot rodando com Mercado Pago...")
