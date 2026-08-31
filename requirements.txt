@@ -3,11 +3,7 @@ pyTelegramBotAPI
 flask
 python-dotenv
 telebot
-flask
-requests
 sqlalchemy
 psycopg2-binary
-pyTelegramBotAPI
-python-dotenv
 cryptography
 mercadopago>=2.0.0
