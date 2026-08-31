@@ -476,7 +476,8 @@ def cmd_pix_customizado(message):
 
     headers = {
         "Authorization": f"Bearer {MP_ACCESS_TOKEN}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "X-Idempotency-Key": str(uuid.uuid4())
     }
     
     external_ref = f"recarga_{user_id}_{uuid.uuid4().hex[:6]}"
