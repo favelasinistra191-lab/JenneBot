@@ -287,7 +287,6 @@ def cmd_abastecer(message):
             bot.reply_to(message, f"✅ Sucesso! Adicionadas {len(linhas)} GGs na BIN `{bin_alvo}`.", parse_mode="Markdown")
             return
 
-    # Guarda o estado para capturar a próxima mensagem do admin com as GGs
     ADMIN_ABASTECENDO[message.from_user.id] = bin_alvo
     bot.reply_to(message, f"📥 BIN `{bin_alvo}` definida. Agora mande as linhas de GGs na próxima mensagem.", parse_mode="Markdown")
 
@@ -546,13 +545,6 @@ def callback_query(call):
 
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
-        dados_db = db.carregar_dados()
-        estoque_atual = [e for e in dados_db.get("estoque", []) if e.get("categoria") == "gg" and e.get("bin") == bin_escolhida and e.get("vendido", 0) == 0]
-        
-        if not estoque_atual:
-            bot.answer_callback_query(call.id, "⚠️ Estoque esgotado para esta BIN!", show_alert=True)
-            return
-
         preco_bin = db.obter_preco_bin(bin_escolhida)
         status, res_gg, res_dados, banco_item, bandeira_item, bin_item = db.realizar_compra_item_casado(user_id, 'gg', preco_bin, bin_v=bin_escolhida)
         
