@@ -479,22 +479,21 @@ def callback_query(call):
             texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
         bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
 
-    elif data == "menu_recarga":
+        elif data == "menu_recarca":
+        texto_rec = (
+            "💎 **FAZER RECARGA VIA PIX**\n\n"
+            "Para adicionar saldo na sua conta de forma automática, envie o comando seguido do valor desejado.\n"
+            "💡 **Exemplo:** `/pix 20` (Valor mínimo: R$ 10,00)\n\n"
+            "O link de pagamento Pix do Mercado Pago será gerado instantaneamente na hora!"
+        )
         markup_rec = types.InlineKeyboardMarkup(row_width=1)
         markup_rec.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
-        texto_rec = (
-            f"💳 **FAZER RECARGA VIA PIX**\n\n"
-            f"Para adicionar saldo na sua conta de forma automática, envie o comando seguido do valor desejado.\n\n"
-            f"💡 **Exemplo:**\n`/pix 20` (Valor mínimo: R$ 10,00)\n\n"
-            f"⚡ O link de pagamento Pix do Mercado Pago será gerado instantaneamente na hora!"
-        )
         try:
             bot.edit_message_text(text=texto_rec, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup_rec, parse_mode="Markdown")
         except Exception:
-            bot.send_message(call.message.chat.id, text=texto_rec, reply_markup=markup_rec, parse_mode="Markdown")
+            bot.send_message(call.message.chat.id, texto_rec, reply_markup=markup_rec, parse_mode="Markdown")
 
     elif data == "menu_gg":
-        elif data == "menu_gg":
         dados_db = db.carregar_dados()
         estoque = dados_db.get("estoque", [])
         bins_disponiveis = {}
