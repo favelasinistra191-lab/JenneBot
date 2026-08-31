@@ -605,20 +605,11 @@ def callback_query(call):
         else:
             bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
             
-        elif data == "voltar_menu":
+            elif data == "voltar_menu":
         text, markup = main_menu(user_id)
         try: bot.delete_message(call.message.chat.id, call.message.message_id)
         except: pass
         
-        dados = db.carregar_dados()
-        banner_file_id = dados.get("configuracoes", {}).get("banner_file_id")
-        
-        if banner_file_id:
-            try: bot.send_photo(call.message.chat.id, photo=banner_file_id, caption=text, reply_markup=markup, parse_mode="Markdown")
-            except: bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-        else:
-            bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-
         dados = db.carregar_dados()
         banner_file_id = dados.get("configuracoes", {}).get("banner_file_id")
         
