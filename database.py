@@ -166,7 +166,7 @@ def obter_dados_relatorio():
             
     return vendas, faturamento, clientes
 
-def adicionar_lote_estoque(lista_itens, categoria, bin="000000", banco="GERAL", bandeira="GERAL"):
+def adicionar_lote_estoque(lista_itens, categoria="gg", bin="000000", banco="GERAL", bandeira="GERAL"):
     dados = carregar_dados(forcar_atualizacao=True)
     estoque = dados.get("estoque", [])
     novo_id = max([e.get("id", 0) for e in estoque], default=0) + 1
@@ -174,7 +174,7 @@ def adicionar_lote_estoque(lista_itens, categoria, bin="000000", banco="GERAL", 
     for conteudo in lista_itens:
         estoque.append({
             "id": novo_id,
-            "categoria": categoria,
+            "categoria": "gg",  # Forçado para "gg" para o painel de compras reconhecer perfeitamente
             "conteudo": conteudo,
             "bin": bin,
             "banco": banco,
