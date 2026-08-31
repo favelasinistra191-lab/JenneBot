@@ -605,7 +605,7 @@ def callback_query(call):
         else:
             bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
             
-    elif data == "voltar_menu":
+        elif data == "voltar_menu":
         text, markup = main_menu(user_id)
         try: 
             bot.delete_message(call.message.chat.id, call.message.message_id)
