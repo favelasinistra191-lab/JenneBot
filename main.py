@@ -622,7 +622,7 @@ def callback_query(call):
                 bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
         else:
             bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-
+            
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     LOG.info("Bot rodando com Mercado Pago...")
