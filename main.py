@@ -600,25 +600,28 @@ def callback_query(call):
             bot.send_message(call.message.chat.id, msg, parse_message="Markdown")
         elif status == "saldo_insuficiente":
             bot.send_message(call.message.chat.id, "❌ Saldo insuficiente! Faça uma recarga Pix.")
-        elif status == "falta_dados":
+                elif status == "falta_dados":
             bot.send_message(call.message.chat.id, "⚠️ Estoque sem dados de titular suficientes.")
         else:
             bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
             
-            elif data == "voltar_menu":
+    elif data == "voltar_menu":
         text, markup = main_menu(user_id)
-        try: bot.delete_message(call.message.chat.id, call.message.message_id)
-        except: pass
+        try: 
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        except Exception: 
+            pass
         
         dados = db.carregar_dados()
         banner_file_id = dados.get("configuracoes", {}).get("banner_file_id")
         
         if banner_file_id:
-            try: bot.send_photo(call.message.chat.id, photo=banner_file_id, caption=text, reply_markup=markup, parse_mode="Markdown")
-            except: bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
+            try: 
+                bot.send_photo(call.message.chat.id, photo=banner_file_id, caption=text, reply_markup=markup, parse_mode="Markdown")
+            except Exception: 
+                bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
         else:
             bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     LOG.info("Bot rodando com Mercado Pago...")
