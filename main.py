@@ -513,7 +513,8 @@ def callback_query(call):
         if not bins_disponiveis:
             bot.answer_callback_query(call.id, "⚠️ No momento não há nenhuma GG disponível em estoque!", show_alert=True)
             return
-            markup_gg = types.InlineKeyboardMarkup(row_width=1)
+                markup_gg = types.InlineKeyboardMarkup(row_width=1)
+    # Adiciona os botões das bins aqui se houver...
     try:
         bot.edit_message_caption(
             chat_id=call.message.chat.id,
@@ -523,30 +524,12 @@ def callback_query(call):
             parse_mode="Markdown"
         )
     except Exception:
-        pass
-        try:
-            bot.edit_message_text(
-                text="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
-                chat_id=call.message.chat.id,
-                message_id=call.message.message_id,
-                reply_markup=markup_gg,
-                parse_mode="Markdown"
-            )
-        except Exception:
-            bot.send_message(
-                call.message.chat.id,
-                "💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
-                reply_markup=markup_gg,
-                parse_mode="Markdown"
-            )
-
-        except Exception:
-            bot.send_message(
-                call.message.chat.id,
-                text="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
-                reply_markup=markup_gg,
-                parse_mode="Markdown"
-            )
+        bot.send_message(
+            call.message.chat.id,
+            "💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
+            reply_markup=markup_gg,
+            parse_mode="Markdown"
+        )
 
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
