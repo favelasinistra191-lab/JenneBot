@@ -494,27 +494,28 @@ def callback_query(call):
             bot.send_message(call.message.chat.id, text=texto_rec, reply_markup=markup_rec, parse_mode="Markdown")
 
     elif data == "menu_gg":
+        elif data == "menu_gg":
         dados_db = db.carregar_dados()
         estoque = dados_db.get("estoque", [])
         bins_disponiveis = {}
-
+        
         for item in estoque:
-            if item.get("categoria") == "gg" and item.get("vendido", 0) == 0:
-                bin_code = item.get("bin")
-                if bin_code:
-                    if bin_code not in bins_disponiveis:
-                        bins_disponiveis[bin_code] = {
-                            "banco": item.get("banco", "GERAL"),
-                            "bandeira": item.get("bandeira", "OUTRA"),
-                            "quantidade": 0
-                        }
-                    bins_disponiveis[bin_code]["quantidade"] += 1
+            if str(item.get("categoria", "")).lower().strip() == "gg" and int(item.get("vendido", 0)) == 0:
+                bin_code = str(item.get("bin", "GERAL"))
+                if bin_code not in bins_disponiveis:
+                    bins_disponiveis[bin_code] = {"quantidade": 0}
+                bins_disponiveis[bin_code]["quantidade"] += 1
 
         if not bins_disponiveis:
             bot.answer_callback_query(call.id, "⚠️ No momento não há nenhuma GG disponível em estoque!", show_alert=True)
             return
 
         markup_gg = types.InlineKeyboardMarkup(row_width=1)
+        for bin_code, info in bins_disponiveis.items():
+            markup_gg.add(types.InlineKeyboardButton(f"BIN {bin_code}", callback_data=f"comprar_gg_{bin_code}"))
+            
+        markup_gg.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
+        
         try:
             bot.edit_message_caption(
                 chat_id=call.message.chat.id,
@@ -523,6 +524,14 @@ def callback_query(call):
                 reply_markup=markup_gg,
                 parse_mode="Markdown"
             )
+        except Exception:
+            bot.send_message(
+                call.message.chat.id,
+                "💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
+                reply_markup=markup_gg,
+                parse_mode="Markdown"
+            )
+
         except Exception:
             bot.send_message(
                 call.message.chat.id,
