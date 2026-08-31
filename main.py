@@ -515,7 +515,7 @@ def callback_query(call):
             return
 
         markup_gg = types.InlineKeyboardMarkup(row_width=1)
-            try:
+        try:
         bot.edit_message_caption(
             chat_id=call.message.chat.id,
             message_id=call.message.message_id,
