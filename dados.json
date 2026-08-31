@@ -1,0 +1,13 @@
+{
+    "usuarios": [],
+    "estoque": [],
+    "gift_cards": [],
+    "dados_titular": [],
+    "admin_pendente": {},
+    "precos_bin": {},
+    "configuracoes": {
+        "bonus_porcentagem": 100.0,
+        "bonus_expira_em": null,
+        "banner_file_id": null
+    }
+}
