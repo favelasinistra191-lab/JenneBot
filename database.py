@@ -1,124 +1,58 @@
-"""
-Módulo de Banco de Dados • Don Ghost Bot
-Gerenciamento de Cache, GitHub, Usuários, Indicação Automática, Promoções, Histórico e Preços por BIN
-"""
-import os
 import json
-import base64
-import requests
-import time
+import os
+import threading
 
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
-REPO_NAME = "favelasinistra191-lab/JenneBot"
-FILE_PATH = "dados.json"
-
-_cache_dados = None
-_ultimo_carregamento = 0
-CACHE_TTL = 10  # Segundos para revalidar cache
-
-def carregar_dados(forcar_atualizacao=False):
-    global _cache_dados, _ultimo_carregamento
-    agora = time.time()
-    
-    if not forcar_atualizacao and _cache_dados and (agora - _ultimo_carregamento < CACHE_TTL):
-        return _cache_dados
-
-    estrutura_padrao = {
-        "usuarios": [], 
-        "estoque": [], 
-        "gift_cards": [], 
-        "dados_titular": [],
-        "admin_pendente": {},
-        "precos_bin": {}, 
-        "configuracoes": {
-            "bonus_porcentagem": 100.0, 
-            "bonus_expira_em": None,
-            "banner_file_id": None
-        }
-    }
-    
-    if not GITHUB_TOKEN:
-        if os.path.exists(FILE_PATH):
-            with open(FILE_PATH, "r", encoding="utf-8") as f:
-                dados = json.load(f)
-                if "admin_pendente" not in dados: dados["admin_pendente"] = {}
-                if "precos_bin" not in dados: dados["precos_bin"] = {}
-                if "configuracoes" not in dados:
-                    dados["configuracoes"] = {"bonus_porcentagem": 100.0, "bonus_expira_em": None, "banner_file_id": None}
-                _cache_dados = dados
-                _ultimo_carregamento = agora
-                return dados
-        return estrutura_padrao
-
-    url = f"https://api.github.com/repos/{REPO_NAME}/contents/{FILE_PATH}"
-    headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
-    
-    try:
-        response = requests.get(url, headers=headers, timeout=5)
-        if response.status_code == 200:
-            file_content = response.json().get("content")
-            decoded_bytes = base64.b64decode(file_content)
-            dados = json.loads(decoded_bytes.decode("utf-8"))
-            if "admin_pendente" not in dados: dados["admin_pendente"] = {}
-            if "precos_bin" not in dados: dados["precos_bin"] = {}
-            if "configuracoes" not in dados:
-                dados["configuracoes"] = {"bonus_porcentagem": 100.0, "bonus_expira_em": None, "banner_file_id": None}
-            _cache_dados = dados
-            _ultimo_carregamento = agora
-            return dados
-    except Exception:
-        if _cache_dados:
-            return _cache_dados
-
-    return estrutura_padrao
-
-def salvar_dados(dados):
-    global _cache_dados, _ultimo_carregamento
-    _cache_dados = dados
-    _ultimo_carregamento = time.time()
-
-    if not GITHUB_TOKEN:
-        with open(FILE_PATH, "w", encoding="utf-8") as f:
-            json.dump(dados, f, ensure_ascii=False, indent=4)
-        return
-
-    url = f"https://api.github.com/repos/{REPO_NAME}/contents/{FILE_PATH}"
-    headers = {"Authorization": f"Bearer {GITHUB_TOKEN}"}
-    
-    try:
-        r_get = requests.get(url, headers=headers, timeout=5)
-        sha = r_get.json().get("sha") if r_get.status_code == 200 else None
-
-        json_str = json.dumps(dados, ensure_ascii=False, indent=4)
-        content_encoded = base64.b64encode(json_str.encode("utf-8")).decode("utf-8")
-
-        payload = {
-            "message": "Atualização rápida via cache",
-            "content": content_encoded,
-            "branch": "main"
-        }
-        if sha:
-            payload["sha"] = sha
-
-        requests.put(url, headers=headers, json=payload, timeout=5)
-    except Exception:
-        pass
+ARQUIVO_DADOS = "dados.json"
+lock = threading.Lock()
 
 def criar_tabelas():
-    dados = carregar_dados(forcar_atualizacao=True)
-    if not dados.get("usuarios"):
-        salvar_dados(dados)
-    print("Banco de dados configurado com sucesso!")
+    with lock:
+        if not os.path.exists(ARQUIVO_DADOS):
+            dados_iniciais = {
+                "usuarios": [],
+                "estoque": [],
+                "dados_titular": [],
+                "gifts": [],
+                "compras": [],
+                "configuracoes": {
+                    "bonus_porcentagem": 100.0,
+                    "bonus_expira_em": None,
+                    "banner_file_id": None
+                },
+                "precos_bins": {}
+            }
+            with open(ARQUIVO_DADOS, "w", encoding="utf-8") as f:
+                json.dump(dados_iniciais, f, indent=4, ensure_ascii=False)
+
+def carregar_dados(forcar_atualizacao=False):
+    with lock:
+        if not os.path.exists(ARQUIVO_DADOS):
+            criar_tabelas()
+        try:
+            with open(ARQUIVO_DADOS, "r", encoding="utf-8") as f:
+                dados = json.load(f)
+                if "precos_bins" not in dados:
+                    dados["precos_bins"] = {}
+                if "dados_titular" not in dados:
+                    dados["dados_titular"] = []
+                return dados
+        except Exception:
+            return {
+                "usuarios": [], "estoque": [], "dados_titular": [],
+                "gifts": [], "compras": [], "configuracoes": {}, "precos_bins": {}
+            }
+
+def salvar_dados(dados):
+    with lock:
+        with open(ARQUIVO_DADOS, "w", encoding="utf-8") as f:
+            json.dump(dados, f, indent=4, ensure_ascii=False)
 
 def garantir_usuario(user_id, nome, username, indicado_por=None):
-    dados = carregar_dados(forcar_atualizacao=True)
+    dados = carregar_dados()
     usuarios = dados.get("usuarios", [])
     
     for u in usuarios:
         if u["user_id"] == user_id:
-            if not u.get("indicado_por") and indicado_por and indicado_por != user_id:
-                u["indicado_por"] = indicado_por
-                salvar_dados(dados)
             return
             
     novo_usuario = {
@@ -126,8 +60,7 @@ def garantir_usuario(user_id, nome, username, indicado_por=None):
         "nome": nome,
         "username": username,
         "saldo": 0.0,
-        "indicado_por": indicado_por if (indicado_por and indicado_por != user_id) else None,
-        "indicacao_paga": False
+        "indicado_por": indicado_por
     }
     usuarios.append(novo_usuario)
     dados["usuarios"] = usuarios
@@ -142,124 +75,168 @@ def obter_saldo(user_id):
 
 def obter_preco_bin(bin_code):
     dados = carregar_dados()
-    precos = dados.get("precos_bin", {})
-    return float(precos.get(bin_code, 4.0))
+    precos = dados.get("precos_bins", {})
+    return float(precos.get(str(bin_code), 10.0))
 
-def definir_preco_bin(bin_code, preco):
-    dados = carregar_dados(forcar_atualizacao=True)
-    if "precos_bin" not in dados:
-        dados["precos_bin"] = {}
-    dados["precos_bin"][bin_code] = preco
-    salvar_dados(dados)
-
-def obter_dados_relatorio():
+def definir_preco_bin(bin_code, valor):
     dados = carregar_dados()
-    clientes = len(dados.get("usuarios", []))
-    vendas = len([e for e in dados.get("estoque", []) if e.get("vendido") == 1])
-    
-    faturamento = 0.0
-    precos = dados.get("precos_bin", {})
-    for e in dados.get("estoque", []):
-        if e.get("vendido") == 1:
-            b_code = e.get("bin", "000000")
-            faturamento += float(precos.get(b_code, 4.0))
-            
-    return vendas, faturamento, clientes
-
-def adicionar_lote_estoque(lista_itens, categoria="gg", bin="000000", banco="GERAL", bandeira="GERAL"):
-    dados = carregar_dados(forcar_atualizacao=True)
-    estoque = dados.get("estoque", [])
-    novo_id = max([e.get("id", 0) for e in estoque], default=0) + 1
-    
-    for conteudo in lista_itens:
-        estoque.append({
-            "id": novo_id,
-            "categoria": "gg",  # Forçado para "gg" para o painel de compras reconhecer perfeitamente
-            "conteudo": conteudo,
-            "bin": bin,
-            "banco": banco,
-            "bandeira": bandeira,
-            "vendido": 0
-        })
-        novo_id += 1
-        
-    dados["estoque"] = estoque
+    if "precos_bins" not in dados:
+        dados["precos_bins"] = {}
+    dados["precos_bins"][str(bin_code)] = float(valor)
     salvar_dados(dados)
 
-def adicionar_lote_dados_titular(lista_titulares):
-    dados = carregar_dados(forcar_atualizacao=True)
-    titulares = dados.get("dados_titular", [])
-    novo_id = max([t.get("id", 0) for t in titulares], default=0) + 1
-    
-    for conteudo in lista_titulares:
-        titulares.append({
-            "id": novo_id,
-            "conteudo": conteudo,
-            "usado": 0
-        })
-        novo_id += 1
-        
-    dados["dados_titular"] = titulares
-    salvar_dados(dados)
-
-def listar_estoque_gg_agrupado():
+def adicionar_lote_estoque(linhas, categoria="gg", bin="GERAL"):
     dados = carregar_dados()
-    estoque = dados.get("estoque", [])
-    precos = dados.get("precos_bin", {})
-    
-    agrupado = {}
-    for item in estoque:
-        if item.get("categoria") == "gg" and item.get("vendido") == 0:
-            b = item.get("bin")
-            band = item.get("bandeira")
-            key = (b, band)
-            agrupado[key] = agrupado.get(key, 0) + 1
+    if "estoque" not in dados:
+        dados["estoque"] = []
+    if "dados_titular" not in dados:
+        dados["dados_titular"] = []
+
+    for linha in linhas:
+        linha = linha.strip()
+        if not linha:
+            continue
+        
+        # Se for uma linha completa com dados ou CC pura
+        if "|" in linha:
+            partes = linha.split("|")
+            # Identifica se a linha tem dados de titular junto ou é só CC
+            if len(partes) >= 6:
+                # Exemplo: CC|MES|ANO|CVV|Nome|CPF
+                cartao_puro = f"{partes[0]}|{partes[1]}|{partes[2]}|{partes[3]}"
+                titular_puro = f"{partes[4]}|{partes[5]}"
+                
+                dados["estoque"].append({
+                    "categoria": str(categoria).lower(),
+                    "bin": str(bin),
+                    "conteudo": cartao_puro,
+                    "vendido": 0
+                })
+                dados["dados_titular"].append({
+                    "conteudo": titular_puro,
+                    "usado": 0
+                })
+            else:
+                dados["estoque"].append({
+                    "categoria": str(categoria).lower(),
+                    "bin": str(bin),
+                    "conteudo": linha,
+                    "vendido": 0
+                })
+        else:
+            dados["estoque"].append({
+                "categoria": str(categoria).lower(),
+                "bin": str(bin),
+                "conteudo": linha,
+                "vendido": 0
+            })
             
-    resultado = []
-    for (b, band), qtd in agrupado.items():
-        preco = float(precos.get(b, 4.0))
-        resultado.append((b, band, qtd, preco))
-    return resultado
+    salvar_dados(dados)
+
+def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
+    dados = carregar_dados()
+    usuarios = dados.get("usuarios", [])
+    estoque = dados.get("estoque", [])
+    dados_titular = dados.get("dados_titular", [])
+
+    # Localiza o usuário e valida o saldo
+    usuario_obj = None
+    for u in usuarios:
+        if u["user_id"] == user_id:
+            usuario_obj = u
+            break
+            
+    if not usuario_obj or float(usuario_obj.get("saldo", 0.0)) < preco:
+        return "saldo_insuficiente", None, None, None, None, None
+
+    # Procura um item GG disponível no estoque
+    item_escolhido = None
+    index_estoque = -1
+    for idx, item in enumerate(estoque):
+        if str(item.get("categoria", "")).lower() == str(categoria).lower() and int(item.get("vendido", 0)) == 0:
+            if bin_v and str(item.get("bin")) != str(bin_v):
+                continue
+            item_escolhido = item
+            index_estoque = idx
+            break
+
+    if not item_escolhido:
+        return "estoque_esgotado", None, None, None, None, None
+
+    # Procura dados de titular disponíveis
+    titular_escolhido = None
+    index_titular = -1
+    for idx, t in enumerate(dados_titular):
+        if int(t.get("usado", 0)) == 0:
+            titular_escolhido = t
+            index_titular = idx
+            break
+
+    if not titular_escolhido:
+        # Se não houver dados separados cadastrados, cria um dado coringa padrão para não travar a venda
+        dados_titular_str = "TITULAR NÃO INFORMADO|00000000000"
+    else:
+        dados_titular_str = titular_escolhido["conteudo"]
+        dados_titular[index_titular]["usado"] = 1
+
+    # Marca o cartão como vendido
+    estoque[index_estoque]["vendido"] = 1
+    
+    # Desconta o saldo do usuário
+    usuario_obj["saldo"] = float(usuario_obj.get("saldo", 0.0)) - preco
+
+    # Registra no histórico de compras
+    if "compras" not in dados:
+        dados["compras"] = []
+    
+    conteudo_cc = item_escolhido["conteudo"]
+    banco_str = "BANCO GERAL"
+    bandeira_str = "VISA/MASTER"
+    
+    dados["compras"].append({
+        "user_id": user_id,
+        "conteudo": conteudo_cc,
+        "banco": banco_str,
+        "bandeira": bandeira_str
+    })
+
+    salvar_dados(dados)
+    return "ok", conteudo_cc, dados_titular_str, banco_str, bandeira_str, item_escolhido.get("bin")
 
 def obter_historico_compras(user_id):
     dados = carregar_dados()
-    estoque = dados.get("estoque", [])
-    return [e for e in estoque if e.get("vendido") == 1 and e.get("comprado_por") == user_id]
+    compras = dados.get("compras", [])
+    return [c for c in compras if c.get("user_id") == user_id]
 
-def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
-    dados = carregar_dados(forcar_atualizacao=True)
-    usuarios = dados.get("usuarios", [])
-    estoque = dados.get("estoque", [])
-    titulares = dados.get("dados_titular", [])
-    
-    user = next((u for u in usuarios if u["user_id"] == user_id), None)
-    if not user or user.get("saldo", 0.0) < preco:
-        return "saldo_insuficiente", None, None, None, None, None
-        
-    item_escolhido = next((item for item in estoque if item.get("categoria") == categoria and item.get("vendido") == 0 and (not bin_v or item.get("bin") == bin_v)), None)
-    if not item_escolhido:
-        return "esgotado", None, None, None, None, None
-        
-    titular_escolhido = next((t for t in titulares if t.get("usado", 0) == 0), None)
-    if not titular_escolhido:
-        return "falta_dados", None, None, None, None, None
-
-    # Desconta o saldo do usuário
-    user["saldo"] -= preco
-
-    # Pega os dados para retornar ao comprador
-    conteudo_gg = item_escolhido["conteudo"]
-    conteudo_titular = titular_escolhido["conteudo"]
-    banco = item_escolhido["banco"]
-    bandeira = item_escolhido["bandeira"]
-    bin_codigo = item_escolhido["bin"]
-
-    # APAGA DEFINITIVAMENTE DO BANCO (Remove as linhas vendidas/usadas para não acumular lixo)
-    estoque.remove(item_escolhido)
-    titulares.remove(titular_escolhido)
-
-    dados["estoque"] = estoque
-    dados["dados_titular"] = titulares
-
+def adicionar_gift(codigo, valor):
+    dados = carregar_dados()
+    if "gifts" not in dados:
+        dados["gifts"] = []
+    dados["gifts"].append({
+        "codigo": codigo,
+        "valor": float(valor),
+        "usado": 0
+    })
     salvar_dados(dados)
-    return "ok", conteudo_gg, conteudo_titular, banco, bandeira, bin_codigo
+
+def resgatar_gift(user_id, codigo):
+    dados = carregar_dados()
+    gifts = dados.get("gifts", [])
+    
+    for g in gifts:
+        if g["codigo"].upper() == codigo.upper():
+            if int(g.get("usado", 0)) == 1:
+                return "usado", 0.0
+            
+            g["usado"] = 1
+            valor = float(g.get("valor", 0.0))
+            
+            for u in dados.get("usuarios", []):
+                if u["user_id"] == user_id:
+                    u["saldo"] = float(u.get("saldo", 0.0)) + valor
+                    break
+            
+            salvar_dados(dados)
+            return "ok", valor
+            
+    return "invalido", 0.0
