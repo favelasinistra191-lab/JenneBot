@@ -600,7 +600,7 @@ def callback_query(call):
             bot.send_message(call.message.chat.id, msg, parse_message="Markdown")
         elif status == "saldo_insuficiente":
             bot.send_message(call.message.chat.id, "❌ Saldo insuficiente! Faça uma recarga Pix.")
-                elif status == "falta_dados":
+                        elif status == "falta_dados":
             bot.send_message(call.message.chat.id, "⚠️ Estoque sem dados de titular suficientes.")
         else:
             bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
@@ -619,6 +619,10 @@ def callback_query(call):
             try: 
                 bot.send_photo(call.message.chat.id, photo=banner_file_id, caption=text, reply_markup=markup, parse_mode="Markdown")
             except Exception: 
+                bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
+        else:
+            bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
+            
                 bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
         else:
             bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
