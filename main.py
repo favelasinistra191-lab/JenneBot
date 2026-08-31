@@ -479,7 +479,7 @@ def callback_query(call):
             texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
         bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
 
-            elif data == "historico_compras":
+    elif data == "historico_compras":
         historico = db.obter_historico_compras(user_id)
         if not historico:
             bot.send_message(call.message.chat.id, "📦 Você ainda não realizou compras.", parse_mode="Markdown")
