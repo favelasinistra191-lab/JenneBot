@@ -1,11 +1,6 @@
-"""
-Arquivo Principal - Don Ghost Bot (Versão Mercado Pago)
-Versão Profissional Completa e Inteira • Roteamento Isolado + Banner Dinâmico no Start + Comandos Admin
-"""
 import os
 import logging
 import threading
-import uuid
 import time
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify
@@ -15,13 +10,9 @@ import requests
 
 import config
 import database as db
-
 import mercadopago
 
-MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
-if not MP_ACCESS_TOKEN:
-    MP_ACCESS_TOKEN = "APP_USR-249848378901175-080605-e67c3c2b3575d5a687864a126913a7ae-3171236437"
-
+MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN", "APP_USR-249848378901175-080605-e67c3c2b3575d5a687864a126913a7ae-3171236437")
 sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
 
 logging.basicConfig(level=logging.INFO)
@@ -33,7 +24,6 @@ db.criar_tabelas()
 app = Flask(__name__)
 CANAL_OBRIGATORIO = "https://t.me/+VNkIZojSrHs4NDJh"
 
-# Dicionário temporário para gerenciar a espera de abastecimento por admin
 ADMIN_ABASTECENDO = {}
 
 @app.route('/')
@@ -73,7 +63,7 @@ def webhook_mercadopago():
                                 dados = db.carregar_dados(forcar_atualizacao=True)
                                 config_promocao = dados.get("configuracoes", {})
                                 
-                                porcentagem_bonus = float(config_promocao.get("bonus_porcentagem", 100.0))
+                                porcentagem_bonus = float(config_promocao.get("bonus_porcentagem", 0.0))
                                 expira_em = config_promocao.get("bonus_expira_em")
                                 
                                 if expira_em and time.time() > expira_em:
@@ -82,33 +72,24 @@ def webhook_mercadopago():
                                 valor_bonus = valor_pago * (porcentagem_bonus / 100.0)
                                 valor_total = valor_pago + valor_bonus
                                 
-                                usuarios = dados.get("usuarios", [])
-                                usuario_encontrado = None
-                                for u in usuarios:
-                                    if u["user_id"] == user_id:
-                                        usuario_encontrado = u
-                                        break
-
-                                if usuario_encontrado:
-                                    usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + valor_total
-                                    db.salvar_dados(dados)
-                                    novo_saldo = usuario_encontrado["saldo"]
-                                    
-                                    markup = types.InlineKeyboardMarkup()
-                                    markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
-                                    
-                                    try:
-                                        msg_bonus_texto = f" (+ {porcentagem_bonus:.0f}% de Bônus)" if porcentagem_bonus > 0 else ""
-                                        bot.send_message(
-                                            user_id,
-                                            f"✅ **Pagamento Aprovado via Mercado Pago!**\n\n"
-                                            f"💵 Recarga de R$ {valor_pago:.2f}{msg_bonus_texto} adicionada com sucesso!\n"
-                                            f"💰 **Saldo Atual:** `R$ {novo_saldo:.2f}`",
-                                            reply_markup=markup,
-                                            parse_mode="Markdown"
-                                        )
-                                    except Exception as e:
-                                        LOG.error(f"Erro Pix MP: {e}")
+                                db.alterar_saldo(user_id, valor_total)
+                                novo_saldo = db.obter_saldo(user_id)
+                                
+                                markup = types.InlineKeyboardMarkup()
+                                markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
+                                
+                                try:
+                                    msg_bonus_texto = f" (+ {porcentagem_bonus:.0f}% de Bônus)" if porcentagem_bonus > 0 else ""
+                                    bot.send_message(
+                                        user_id,
+                                        f"✅ **Pagamento Aprovado via Mercado Pago!**\n\n"
+                                        f"💵 Recarga de R$ {valor_pago:.2f}{msg_bonus_texto} adicionada com sucesso!\n"
+                                        f"💰 **Saldo Atual:** `R$ {novo_saldo:.2f}`",
+                                        reply_markup=markup,
+                                        parse_mode="Markdown"
+                                    )
+                                except Exception as e:
+                                    LOG.error(f"Erro Pix MP: {e}")
 
         return jsonify({"status": "success"}), 200
     except Exception as e:
@@ -127,40 +108,9 @@ def verificar_inscricao_canal(user_id):
         return True 
     return False
 
-def consultar_bin(bin6):
-    bin6 = ''.join(filter(str.isdigit, str(bin6)))[:6]
-    if len(bin6) < 6:
-        return "OUTRA", "BANCO DESCONHECIDO"
-    
-    primeiro_digito = bin6[0]
-    if primeiro_digito == '4':
-        bandeira = "VISA"
-    elif bin6.startswith(('51','52','53','54','55')) or (2221 <= int(bin6[:4]) <= 2720):
-        bandeira = "MASTERCARD"
-    elif bin6.startswith(('34', '37')):
-        bandeira = "AMERICAN EXPRESS"
-    elif bin6.startswith('6011') or bin6.startswith('65'):
-        bandeira = "DISCOVER"
-    else:
-        bandeira = "OUTRA"
-
-    banco = "BANCO DO BRASIL / GERAL"
-    try:
-        response = requests.get(f"https://lookup.binlist.net/{bin6}", timeout=2, headers={'Accept-Version': '3'})
-        if response.status_code == 200:
-            data = response.json()
-            b = data.get("bank", {}).get("name")
-            if b:
-                banco = b.upper()
-    except Exception:
-        pass
-    return bandeira, banco
-
 def main_menu(user_id):
     db.garantir_usuario(user_id, "", "")
     saldo = db.obter_saldo(user_id)
-    bot_username = bot.get_me().username
-    link_indicacao = f"https://t.me/{bot_username}?start=ref_{user_id}"
     
     text = (
         f"💎 **BEM-VINDO AO BOT DON GHOST • PREMIUM SHOP** 💎\n"
@@ -168,9 +118,7 @@ def main_menu(user_id):
         f"👤 **ID de Acesso:** `{user_id}`\n"
         f"💰 **Saldo em Conta:** `R$ {saldo:.2f}`\n"
         f"───────────────────────────────\n"
-        f"🔥 *As melhores notícias do mercado, GGs de alta qualidade e aprovação expressa.*\n\n"
-        f"🔗 **Seu Link de Indicação:**\n`{link_indicacao}`\n"
-        f"💡 *Indique amigos: Você ganha R$ 20,00 de bônus assim que o amigo convidado fizer o primeiro depósito!*"
+        f"🔥 *As melhores notícias do mercado, GGs de alta qualidade e aprovação expressa.*"
     )
     
     markup = types.InlineKeyboardMarkup(row_width=2)
@@ -180,7 +128,6 @@ def main_menu(user_id):
         types.InlineKeyboardButton("👤 Meu Perfil", callback_data="perfil"),
         types.InlineKeyboardButton("📦 Minhas Compras", callback_data="historico_compras"),
         types.InlineKeyboardButton("🎁 Resgatar Gift", callback_data="info_gift"),
-        types.InlineKeyboardButton("🤝 Indique e Ganhe", callback_data="info_indicar"),
         types.InlineKeyboardButton("📞 Suporte", callback_data="suporte")
     )
     return text, markup
@@ -217,15 +164,7 @@ def cmd_start(message):
             bot.send_message(message.chat.id, "⚠️ **Acesso Restrito!**\n\nPara utilizar o bot, entre no canal oficial primeiro.", reply_markup=markup, parse_mode="Markdown")
             return
 
-        args = message.text.split()
-        indicado_por = None
-        if len(args) > 1 and args[1].startswith("ref_"):
-            try:
-                indicado_por = int(args[1].replace("ref_", ""))
-            except ValueError:
-                pass
-
-        db.garantir_usuario(user_id, primeiro_nome, username, indicado_por=indicado_por)
+        db.garantir_usuario(user_id, primeiro_nome, username)
         text, markup = main_menu(user_id)
         
         dados = db.carregar_dados()
@@ -353,6 +292,7 @@ def cmd_gerar_gift(message):
         valor = float(args[2].replace(",", "."))
         gifts_criados = []
         
+        import uuid
         for _ in range(quantidade):
             codigo = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
             db.adicionar_gift(codigo, valor)
@@ -475,11 +415,6 @@ def callback_query(call):
         
     elif data == "info_gift":
         bot.send_message(call.message.chat.id, "🎁 Para resgatar saldo, envie:\n`/resgatar [codigo]`", parse_mode="Markdown")
-
-    elif data == "info_indicar":
-        bot_username = bot.get_me().username
-        link_indicacao = f"https://t.me/{bot_username}?start=ref_{user_id}"
-        bot.send_message(call.message.chat.id, f"🤝 **INDICAÇÃO E GANHE • R$ 20,00**\n\nConvide amigos usando seu link:\n`{link_indicacao}`", parse_mode="Markdown")
 
     elif data == "historico_compras":
         historico = db.obter_historico_compras(user_id)
