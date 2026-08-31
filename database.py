@@ -224,7 +224,7 @@ def listar_estoque_gg_agrupado():
 def obter_historico_compras(user_id):
     dados = carregar_dados()
     estoque = dados.get("estoque", [])
-        return [e for e in estoque if e.get("vendido") == 1 and e.get("comprado_por") == user_id]
+    return [e for e in estoque if e.get("vendido") == 1 and e.get("comprado_por") == user_id]
 
 def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     dados = carregar_dados(forcar_atualizacao=True)
@@ -236,8 +236,8 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     if not user or user.get("saldo", 0.0) < preco:
         return "saldo_insuficiente", None, None, None, None, None
         
-    item_escolhido = next((item for item in estoque if item.get("categoria") == categoria and item.get("vendido") == 0 and (not bin_v or item.get("bin"] == bin_v)), None)
-    if not item_escolh_ido := item_escolhido: # Correção de sintaxe para clareza
+    item_escolhido = next((item for item in estoque if item.get("categoria") == categoria and item.get("vendido") == 0 and (not bin_v or item.get("bin") == bin_v)), None)
+    if not item_escolhido:
         return "esgotado", None, None, None, None, None
         
     titular_escolhido = next((t for t in titulares if t.get("usado", 0) == 0), None)
