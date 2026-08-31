@@ -1,6 +1,6 @@
 """
 Arquivo Principal - Don Ghost Bot (Versão Mercado Pago)
-Versão Profissional Completa • Banner Dinâmico + GGs Casados + Pix Mercado Pago + Lote Gifts + Gestão de Preço por BIN
+Versão Profissional Completa e Inteira • Roteamento Isolado + Banner Dinâmico no Start + Comandos Admin
 """
 import os
 import logging
@@ -16,16 +16,13 @@ import requests
 import config
 import database as db
 
-# Configurações Mercado Pago (Oficial)
 import mercadopago
-from mercadopago.config import RequestOptions
 
 MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
 if not MP_ACCESS_TOKEN:
     MP_ACCESS_TOKEN = "APP_USR-249848378901175-080605-e67c3c2b3575d5a687864a126913a7ae-3171236437"
 
 sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
-
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger("DonGhostBot")
@@ -34,12 +31,11 @@ bot = telebot.TeleBot(config.TOKEN, threaded=True)
 db.criar_tabelas()
 
 app = Flask(__name__)
-
 CANAL_OBRIGATORIO = "https://t.me/+VNkIZojSrHs4NDJh"
 
 @app.route('/')
 def home():
-    return "DonGhostBot com Mercado Pago está rodando perfeitamente!"
+    return "DonGhostBot rodando perfeitamente!"
 
 @app.route('/webhook/mercadopago', methods=['POST'])
 def webhook_mercadopago():
@@ -49,7 +45,6 @@ def webhook_mercadopago():
             return jsonify({"status": "error"}), 400
 
         tipo_evento = dados_notificacao.get("type") or dados_notificacao.get("topic")
-        
         payment_id = None
         if tipo_evento == "payment":
             payment_id = dados_notificacao.get("data", {}).get("id")
@@ -71,7 +66,6 @@ def webhook_mercadopago():
                         partes = str(external_ref).split("_")
                         if len(partes) >= 2:
                             user_id = int(partes[1])
-                            
                             if valor_pago > 0:
                                 dados = db.carregar_dados(forcar_atualizacao=True)
                                 config_promocao = dados.get("configuracoes", {})
@@ -94,15 +88,6 @@ def webhook_mercadopago():
 
                                 if usuario_encontrado:
                                     usuario_encontrado["saldo"] = float(usuario_encontrado.get("saldo", 0.0)) + valor_total
-                                    
-                                    indicado_por = usuario_encontrado.get("indicado_por")
-                                    if indicado_por and not usuario_encontrado.get("indicacao_paga", False):
-                                        usuario_encontrado["indicacao_paga"] = True
-                                        for u_ind in usuarios:
-                                            if u_ind["user_id"] == indicado_por:
-                                                u_ind["saldo"] = float(u_ind.get("saldo", 0.0)) + 20.0
-                                                break
-
                                     db.salvar_dados(dados)
                                     novo_saldo = usuario_encontrado["saldo"]
                                     
@@ -246,10 +231,11 @@ def cmd_start(message):
         if banner_file_id:
             try:
                 bot.send_photo(message.chat.id, photo=banner_file_id, caption=text, reply_markup=markup, parse_mode="Markdown")
-            except Exception:
-                bot.send_message(message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-        else:
-            bot.send_message(message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
+                return
+            except Exception as e:
+                LOG.error(f"Erro ao enviar foto do banner no start: {e}")
+        
+        bot.send_message(message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
     except Exception as e:
         LOG.error(f"Erro no start: {e}")
 
@@ -269,10 +255,10 @@ def callback_verificar_inscricao(call):
         if banner_file_id:
             try:
                 bot.send_photo(call.message.chat.id, photo=banner_file_id, caption=text, reply_markup=markup, parse_mode="Markdown")
+                return
             except Exception:
-                bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-        else:
-            bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
+                pass
+        bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
     else:
         bot.answer_callback_query(call.id, "⚠️ Você ainda não entrou no canal!", show_alert=True)
 
@@ -299,29 +285,16 @@ def cmd_admin(message):
     )
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
-@bot.message_handler(commands=['set_bonus'])
-def cmd_set_bonus(message):
+@bot.message_handler(commands=['abastecer'])
+def cmd_abastecer(message):
     if message.from_user.id != config.ADMIN_ID:
         return
-    args = message.text.split()
-    if len(args) < 3:
-        bot.reply_to(message, "⚠️ Uso correto: `/set_bonus [porcentagem] [dias]`", parse_mode="Markdown")
+    args = message.text.split(maxsplit=1)
+    if len(args) < 2:
+        bot.reply_to(message, "⚠️ Use: `/abastecer [BIN]` e envie as linhas na mensagem seguinte.", parse_mode="Markdown")
         return
-    try:
-        porcentagem = float(args[1].replace(',', '.'))
-        dias = float(args[2].replace(',', '.'))
-    except ValueError:
-        bot.reply_to(message, "❌ Valores inválidos.", parse_mode="Markdown")
-        return
-    
-    expira_em = time.time() + (dias * 86400)
-    dados = db.carregar_dados(forcar_atualizacao=True)
-    if "configuracoes" not in dados:
-        dados["configuracoes"] = {}
-    dados["configuracoes"]["bonus_porcentagem"] = porcentagem
-    dados["configuracoes"]["bonus_expira_em"] = expira_em
-    db.salvar_dados(dados)
-    bot.reply_to(message, f"✅ **Promoção Configurada!** Bônus: `{porcentagem:.0f}%` por `{dias} dia(s)`", parse_mode="Markdown")
+    bin_alvo = ''.join(filter(str.isdigit, args[1]))[:6]
+    bot.reply_to(message, f"📥 Envie agora o arquivo ou texto com as GGs para a BIN `{bin_alvo}`.", parse_mode="Markdown")
 
 @bot.message_handler(commands=['set_preco'])
 def cmd_set_preco(message):
@@ -329,76 +302,134 @@ def cmd_set_preco(message):
         return
     args = message.text.split()
     if len(args) < 3:
-        bot.reply_to(message, "⚠️ Uso correto: `/set_preco [bin] [valor]`\n*Ex:* `/set_preco 422061 3.0`", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Use: `/set_preco [bin] [valor]`", parse_mode="Markdown")
         return
     try:
-        bin_code = "".join(filter(str.isdigit, args[1]))[:6]
-        preco = float(args[2].replace(',', '.'))
-    except ValueError:
-        bot.reply_to(message, "❌ Valores inválidos.", parse_mode="Markdown")
-        return
-    
-    db.definir_preco_bin(bin_code, preco)
-    bot.reply_to(message, f"✅ **Preço atualizado!** BIN `{bin_code}` agora custa `R$ {preco:.2f}`.", parse_mode="Markdown")
+        bin_code = ''.join(filter(str.isdigit, args[1]))[:6]
+        valor = float(args[2].replace(",", "."))
+        db.definir_preco_bin(bin_code, valor)
+        bot.reply_to(message, f"✅ Preço da BIN `{bin_code}` atualizado para `R$ {valor:.2f}`", parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Erro ao definir preço: {e}")
 
-@bot.message_handler(commands=['abastecer'])
-def cmd_abastecer_etapa1(message):
+@bot.message_handler(commands=['set_bonus'])
+def cmd_set_bonus(message):
     if message.from_user.id != config.ADMIN_ID:
         return
-    args = message.text.replace('/abastecer', '').strip()
-    bin6 = "".join(filter(str.isdigit, args))[:6]
-    if len(bin6) < 6:
-        bot.reply_to(message, "⚠️ Use o formato: `/abastecer 422061`", parse_mode="Markdown")
+    args = message.text.split()
+    if len(args) < 2:
+        bot.reply_to(message, "⚠️ Use: `/set_bonus [porcentagem] [dias (opcional)]`", parse_mode="Markdown")
         return
-    bandeira, banco = consultar_bin(bin6)
-    dados = db.carregar_dados()
-    dados["admin_pendente"] = {"admin_id": message.from_user.id, "tipo": "gg", "bin": bin6, "banco": banco, "bandeira": bandeira}
-    db.salvar_dados(dados)
-    bot.reply_to(message, f"🔍 **BIN Registrada!**\n💳 **BIN:** `{bin6}` | **Bandeira:** `{bandeira}`\n👇 **Mande a lista completa das GGs.**", parse_mode="Markdown")
+    try:
+        porcentagem = float(args[1].replace(",", "."))
+        dias = int(args[2]) if len(args) > 2 else 1
+        expira_em = time.time() + (dias * 86400) if dias > 0 else None
+        
+        dados = db.carregar_dados(forcar_atualizacao=True)
+        if "configuracoes" not in dados:
+            dados["configuracoes"] = {}
+        dados["configuracoes"]["bonus_porcentagem"] = porcentagem
+        dados["configuracoes"]["bonus_expira_em"] = expira_em
+        db.salvar_dados(dados)
+        
+        bot.reply_to(message, f"✅ Bônus configurado para `{porcentagem:.0f}%` (válido por {dias} dias).", parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Erro: {e}")
 
-@bot.message_handler(func=lambda message: message.from_user.id == config.ADMIN_ID and not message.text.startswith('/'))
-def processar_etapa2(message):
-    dados = db.carregar_dados()
-    pendente = dados.get("admin_pendente")
-    if not pendente or pendente.get("admin_id") != message.from_user.id:
+@bot.message_handler(commands=['gerar_gift'])
+def cmd_gerar_gift(message):
+    if message.from_user.id != config.ADMIN_ID:
         return
+    args = message.text.split()
+    if len(args) < 3:
+        bot.reply_to(message, "⚠️ Use: `/gerar_gift [quantidade] [valor]`", parse_mode="Markdown")
+        return
+    try:
+        quantidade = int(args[1])
+        valor = float(args[2].replace(",", "."))
+        gifts_criados = []
+        
+        for _ in range(quantidade):
+            codigo = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
+            db.adicionar_gift(codigo, valor)
+            gifts_criados.append(codigo)
+            
+        texto_resp = f"🎁 **{quantidade} Gifts de R$ {valor:.2f} gerados com sucesso!**\n\n"
+        for g in gifts_criados:
+            texto_resp += f"`{g}`\n"
+        bot.reply_to(message, texto_resp, parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Erro: {e}")
 
-    dados["admin_pendente"] = {}
-    db.salvar_dados(dados)
-    tipo = pendente.get("tipo")
-    texto_bruto = message.text.strip()
-    linhas = texto_bruto.replace('\r\n', '\n').split('\n')
-    
-    if tipo == "gg":
-        bin6 = pendente["bin"]
-        banco = pendente["banco"]
-        bandeira = pendente["bandeira"]
-        cartoes = []
-        for linha in linhas:
-            linha = linha.strip()
-            if not linha: continue
-            for parte in linha.split():
-                if '|' in parte: cartoes.append(parte.strip())
-        if not cartoes:
-            for linha in linhas:
-                if len(linha.strip()) > 10: cartoes.append(linha.strip())
-        if not cartoes:
-            bot.reply_to(message, "❌ Nenhum cartão encontrado.")
+@bot.message_handler(commands=['resgatar'])
+def cmd_resgatar(message):
+    user_id = message.from_user.id
+    args = message.text.split()
+    if len(args) < 2:
+        bot.reply_to(message, "⚠️ Use: `/resgatar [codigo_gift]`", parse_mode="Markdown")
+        return
+    codigo = args[1].strip()
+    status, valor = db.resgatar_gift(user_id, codigo)
+    if status == "ok":
+        saldo_novo = db.obter_saldo(user_id)
+        bot.reply_to(message, f"✅ **Gift resgatado com sucesso!**\n\n💵 Adicionado: `R$ {valor:.2f}`\n💰 Seu Saldo Atual: `R$ {saldo_novo:.2f}`", parse_mode="Markdown")
+    elif status == "usado":
+        bot.reply_to(message, "❌ Este Gift já foi resgatado por alguém.", parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "❌ Código de Gift inválido ou inexistente.", parse_mode="Markdown")
+
+@bot.message_handler(commands=['pix'])
+def cmd_pix(message):
+    try:
+        user_id = message.from_user.id
+        args = message.text.split()
+        if len(args) < 2:
+            bot.reply_to(message, "⚠️ Informe o valor da recarga.\nExemplo: `/pix 20`", parse_mode="Markdown")
+            return
+        
+        valor = float(args[1].replace(",", "."))
+        if valor < 10.0:
+            bot.reply_to(message, "⚠️ O valor mínimo para recarga via Pix é R$ 10,00.", parse_mode="Markdown")
+            return
+            
+        preference_data = {
+            "items": [{
+                "title": f"Recarga de Saldo - ID {user_id}",
+                "quantity": 1,
+                "unit_price": float(valor),
+                "currency_id": "BRL"
+            }],
+            "external_reference": f"recarga_{user_id}_{int(time.time())}",
+            "payment_methods": {
+                "excluded_payment_types": [{"id": "credit_card"}, {"id": "ticket"}],
+                "installments": 1
+            }
+        }
+        
+        preference_response = sdk.preference().create(preference_data)
+        payment_link = preference_response["response"].get("init_point")
+        
+        if not payment_link:
+            bot.reply_to(message, "❌ Erro ao gerar link de pagamento no Mercado Pago. Tente novamente mais tarde.", parse_mode="Markdown")
             return
 
-        db.adicionar_lote_estoque(cartoes, categoria='gg', bin=bin6, banco=banco, bandeira=bandeira)
-        msg_sucesso = f"✅ **Estoque Atualizado!** Adicionadas `{len(cartoes)} GGs` para a BIN `{bin6}`!"
-        bot.reply_to(message, msg_sucesso, parse_mode="Markdown")
-
-@bot.message_handler(commands=['add_dados'])
-def cmd_add_dados(message):
-    if message.from_user.id != config.ADMIN_ID: return
-    texto_completo = message.text.replace('/add_dados', '').strip()
-    if not texto_completo: return
-    linhas = [l.strip() for l in texto_completo.replace('\r\n', '\n').split('\n') if l.strip()]
-    if not linhas: return
-    db.adicionar_lote_dados_titular(linhas)
-    bot.reply_to(message, f"✅ Cadastrados `{len(linhas)}` titulares.", parse_mode="Markdown")
+        markup = types.InlineKeyboardMarkup(row_width=1)
+        markup.add(
+            types.InlineKeyboardButton("🔗 Pagar com Pix (Mercado Pago)", url=payment_link),
+            types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu")
+        )
+        
+        bot.reply_to(
+            message,
+            f"💳 **LINK DE PAGAMENTO PIX GERADO!**\n\n"
+            f"💵 Valor: `R$ {valor:.2f}`\n\n"
+            f"Clique no botão abaixo para abrir o checkout seguro do Mercado Pago. O saldo cai automaticamente após a aprovação!",
+            reply_markup=markup,
+            parse_mode="Markdown"
+        )
+    except Exception as e:
+        LOG.error(f"Erro ao gerar pix: {e}")
+        bot.reply_to(message, f"❌ Erro ao processar recarga Pix: {e}")
 
 @bot.message_handler(commands=['limpar_estoque'])
 def cmd_limpar_estoque(message):
@@ -411,106 +442,6 @@ def cmd_limpar_estoque(message):
         bot.reply_to(message, "🧹 **Estoque limpo com sucesso!**", parse_mode="Markdown")
     except Exception as e:
         bot.reply_to(message, f"❌ Erro: {e}")
-
-@bot.message_handler(commands=['gerar_gift'])
-def cmd_gerar_gift(message):
-    if message.from_user.id != config.ADMIN_ID: return
-    args = message.text.split()
-    if len(args) < 3: return
-    try:
-        quantidade = int(args[1])
-        valor = float(args[2].replace(',', '.'))
-    except ValueError:
-        return
-    
-    dados = db.carregar_dados(forcar_atualizacao=True)
-    if "gift_cards" not in dados: dados["gift_cards"] = []
-    lista_gerados = f"🎁 **Gifts Gerados ({quantidade}x - R$ {valor:.2f})**\n\n"
-    for _ in range(quantidade):
-        codigo_gift = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
-        dados["gift_cards"].append({"codigo": codigo_gift, "valor": valor, "usado": 0})
-        lista_gerados += f"🔑 `R$ {valor:.2f}`: `{codigo_gift}`\n"
-    db.salvar_dados(dados)
-    bot.reply_to(message, lista_gerados, parse_mode="Markdown")
-
-@bot.message_handler(commands=['resgatar'])
-def cmd_resgatar(message):
-    user_id = message.from_user.id
-    args = message.text.split()
-    if len(args) < 2: return
-    codigo = args[1].strip()
-    try:
-        dados = db.carregar_dados(forcar_atualizacao=True)
-        gift_encontrado = next((g for g in dados.get("gift_cards", []) if g.get("codigo") == codigo), None)
-        if not gift_encontrado or gift_encontrado.get("usado") == 1:
-            bot.reply_to(message, "❌ Gift inválido ou já utilizado.")
-            return
-        valor = gift_encontrado.get("valor")
-        gift_encontrado["usado"] = 1
-        
-        usuario_encontrado = next((u for u in dados.get("usuarios", []) if u["user_id"] == user_id), None)
-        if usuario_encontrado:
-            usuario_encontrado["saldo"] = usuario_encontrado.get("saldo", 0.0) + valor
-        else:
-            dados["usuarios"].append({"user_id": user_id, "nome": message.from_user.first_name, "username": message.from_user.username, "saldo": valor})
-        db.salvar_dados(dados)
-        bot.reply_to(message, f"🎉 **Resgate Efetuado!** Adicionado R$ {valor:.2f} ao seu saldo.", parse_mode="Markdown")
-    except Exception as e:
-        bot.reply_to(message, f"❌ Erro: {e}")
-
-@bot.message_handler(commands=['pix'])
-def cmd_pix_customizado(message):
-    user_id = message.from_user.id
-    args = message.text.split()
-    if len(args) < 2:
-        bot.reply_to(message, "⚠️ Informe o valor. Exemplo: `/pix 15` (Mínimo R$ 10,00)", parse_mode="Markdown")
-        return
-    try:
-        valor = float(args[1].replace(',', '.'))
-    except ValueError:
-        bot.reply_to(message, "❌ Valor inválido.", parse_mode="Markdown")
-        return
-    if valor < 10.0:
-        bot.reply_to(message, "⚠️ O valor mínimo para recarga via Pix é de **R$ 10,00**.", parse_mode="Markdown")
-        return
-
-    headers = {
-        "Authorization": f"Bearer {MP_ACCESS_TOKEN}",
-        "Content-Type": "application/json",
-        "X-Idempotency-Key": str(uuid.uuid4())
-    }
-    
-    external_ref = f"recarga_{user_id}_{uuid.uuid4().hex[:6]}"
-    payload = {
-        "transaction_amount": valor,
-        "description": f"Recarga Saldo Bot #{user_id}",
-        "payment_method_id": "pix",
-        "payer": {
-            "email": f"cliente_{user_id}@donghost.com",
-            "first_name": message.from_user.first_name or "Cliente",
-            "last_name": "Telegram"
-        },
-        "external_reference": external_ref
-    }
-
-    try:
-        response = requests.post("https://api.mercadopago.com/v1/payments", json=payload, headers=headers, timeout=15)
-        if response.status_code in [200, 201]:
-            dados_resposta = response.json()
-            point_of_interaction = dados_resposta.get("point_of_interaction", {})
-            qr_data = point_of_interaction.get("transaction_data", {}).get("qr_code")
-            
-            if qr_data:
-                mensagem_pix = f"💳 **PAGAMENTO PIX (MERCADO PAGO)**\n\n💵 **Valor:** `R$ {valor:.2f}`\n\n📋 **PIX COPIA E COLA:**\n`{qr_data}`\n\n*Pague no aplicativo do seu banco. Assim que o pagamento for aprovado, o saldo cairá automaticamente.*"
-                bot.send_message(message.chat.id, mensagem_pix, parse_mode="Markdown")
-            else:
-                bot.send_message(message.chat.id, "❌ Erro ao gerar o código QR do Pix.")
-        else:
-            LOG.error(f"Erro MP API: {response.text}")
-            bot.send_message(message.chat.id, "❌ Erro ao se conectar com o Mercado Pago.")
-    except Exception as e:
-        LOG.error(f"Exceção Pix MP: {e}")
-        bot.send_message(message.chat.id, "❌ Erro de conexão ao gerar pagamento.")
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_query(call):
@@ -556,8 +487,21 @@ def callback_query(call):
             texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
         bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
 
+    elif data == "menu_recarga":
+        markup_rec = types.InlineKeyboardMarkup(row_width=1)
+        markup_rec.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
+        texto_rec = (
+            f"💳 **FAZER RECARGA VIA PIX**\n\n"
+            f"Para adicionar saldo na sua conta de forma automática, envie o comando seguido do valor desejado.\n\n"
+            f"💡 **Exemplo:**\n`/pix 20` (Valor mínimo: R$ 10,00)\n\n"
+            f"⚡ O link de pagamento Pix do Mercado Pago será gerado instantaneamente na hora!"
+        )
+        try:
+            bot.edit_message_text(text=texto_rec, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup_rec, parse_mode="Markdown")
+        except Exception:
+            bot.send_message(call.message.chat.id, text=texto_rec, reply_markup=markup_rec, parse_mode="Markdown")
+
     elif data == "menu_gg":
-        # Verificando se há itens em estoque para listar as BINs ou avisar que está vazio
         dados_db = db.carregar_dados()
         estoque = dados_db.get("estoque", [])
         bins_disponiveis = {}
@@ -575,7 +519,6 @@ def callback_query(call):
                     bins_disponiveis[bin_code]["quantidade"] += 1
 
         if not bins_disponiveis:
-            # AQUI ESTÁ O RETORNO QUANDO NÃO HÁ NENHUM ESTOQUE DE GG (Evita botão fantasma)
             bot.answer_callback_query(call.id, "⚠️ No momento não há nenhuma GG disponível em estoque!", show_alert=True)
             return
 
@@ -605,8 +548,6 @@ def callback_query(call):
 
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
-        
-        # Validação extra de estoque antes de efetuar a compra para evitar falha silenciosa
         dados_db = db.carregar_dados()
         estoque_atual = [e for e in dados_db.get("estoque", []) if e.get("categoria") == "gg" and e.get("bin") == bin_escolhida and e.get("vendido", 0) == 0]
         
@@ -662,10 +603,10 @@ def callback_query(call):
         if banner_file_id:
             try: 
                 bot.send_photo(call.message.chat.id, photo=banner_file_id, caption=text, reply_markup=markup, parse_mode="Markdown")
+                return
             except Exception: 
-                bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
-        else:
-            bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
+                pass
+        bot.send_message(call.message.chat.id, text, reply_markup=markup, parse_mode="Markdown")
 
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
