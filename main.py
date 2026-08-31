@@ -16,8 +16,10 @@ import requests
 import config
 import database as db
 
-# Configurações Mercado Pago (Token Oficial)
-MP_ACCESS_TOKEN = "APP_USR-249848378901175-080605-e67c3c2b3575d5a687864a126913a7ae-3171236437"
+# Configurações Mercado Pago (Lendo do Render)
+import mercadopago
+MP_ACCESS_TOKEN = os.getenv("MP_ACCESS_TOKEN")
+sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
 
 logging.basicConfig(level=logging.INFO)
 LOG = logging.getLogger("DonGhostBot")
