@@ -33,6 +33,9 @@ db.criar_tabelas()
 app = Flask(__name__)
 CANAL_OBRIGATORIO = "https://t.me/+VNkIZojSrHs4NDJh"
 
+# Dicionário temporário para gerenciar a espera de abastecimento por admin
+ADMIN_ABASTECENDO = {}
+
 @app.route('/')
 def home():
     return "DonGhostBot rodando perfeitamente!"
@@ -267,7 +270,6 @@ def cmd_abastecer(message):
     if message.from_user.id != config.ADMIN_ID:
         return
     
-    # Pega tudo o que vem depois do comando /abastecer
     texto_total = message.text or ""
     partes = texto_total.split("\n")
     primeira_linha = partes[0].split()
@@ -278,7 +280,6 @@ def cmd_abastecer(message):
         
     bin_alvo = "".join(filter(str.isdigit, primeira_linha[1]))[:6]
     
-    # Se mandou as GGs na mesma mensagem logo abaixo do comando
     if len(partes) > 1:
         linhas = [l.strip() for l in partes[1:] if l.strip()]
         if linhas:
@@ -286,7 +287,19 @@ def cmd_abastecer(message):
             bot.reply_to(message, f"✅ Sucesso! Adicionadas {len(linhas)} GGs na BIN `{bin_alvo}`.", parse_mode="Markdown")
             return
 
-    bot.reply_to(message, f"📥 BIN `{bin_alvo}` definida. Agora mande as linhas de GGs.", parse_mode="Markdown")
+    # Guarda o estado para capturar a próxima mensagem do admin com as GGs
+    ADMIN_ABASTECENDO[message.from_user.id] = bin_alvo
+    bot.reply_to(message, f"📥 BIN `{bin_alvo}` definida. Agora mande as linhas de GGs na próxima mensagem.", parse_mode="Markdown")
+
+@bot.message_handler(func=lambda m: m.from_user.id == config.ADMIN_ID and m.from_user.id in ADMIN_ABASTECENDO and not m.text.startswith('/'))
+def capturar_linhas_abastecimento(message):
+    bin_alvo = ADMIN_ABASTECENDO.pop(message.from_user.id)
+    linhas = [l.strip() for l in message.text.splitlines() if l.strip()]
+    if linhas:
+        db.adicionar_lote_estoque(linhas, categoria="gg", bin=bin_alvo)
+        bot.reply_to(message, f"✅ Sucesso! Adicionadas {len(linhas)} GGs na BIN `{bin_alvo}` salvas no estoque.", parse_mode="Markdown")
+    else:
+        bot.reply_to(message, "⚠️ Nenhuma linha válida encontrada. Abastecimento cancelado.", parse_mode="Markdown")
 
 @bot.message_handler(commands=['set_preco'])
 def cmd_set_preco(message):
@@ -479,17 +492,7 @@ def callback_query(call):
             texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
         bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
 
-    elif data == "historico_compras":
-        historico = db.obter_historico_compras(user_id)
-        if not historico:
-            bot.send_message(call.message.chat.id, "📦 Você ainda não realizou compras.", parse_mode="Markdown")
-            return
-        texto_hist = "📦 **HISTÓRICO DE COMPRAS (GGs)**\n───────────────────────────────\n"
-        for item in historico[-10:]:
-            texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
-        bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
-
-    elif data == "menu_recarca":
+    elif data == "menu_recarga":
         texto_rec = (
             "💎 **FAZER RECARGA VIA PIX**\n\n"
             "Para adicionar saldo na sua conta de forma automática, envie o comando seguido do valor desejado.\n"
@@ -502,7 +505,6 @@ def callback_query(call):
             bot.edit_message_text(text=texto_rec, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup_rec, parse_mode="Markdown")
         except Exception:
             bot.send_message(call.message.chat.id, texto_rec, reply_markup=markup_rec, parse_mode="Markdown")
-
 
     elif data == "menu_gg":
         dados_db = db.carregar_dados()
@@ -522,15 +524,15 @@ def callback_query(call):
 
         markup_gg = types.InlineKeyboardMarkup(row_width=1)
         for bin_code, info in bins_disponiveis.items():
-            markup_gg.add(types.InlineKeyboardButton(f"BIN {bin_code}", callback_data=f"comprar_gg_{bin_code}"))
+            markup_gg.add(types.InlineKeyboardButton(f"BIN {bin_code} ({info['quantidade']} disp.)", callback_data=f"comprar_gg_{bin_code}"))
             
         markup_gg.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
         
         try:
-            bot.edit_message_caption(
+            bot.edit_message_text(
                 chat_id=call.message.chat.id,
                 message_id=call.message.message_id,
-                caption="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
+                text="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
                 reply_markup=markup_gg,
                 parse_mode="Markdown"
             )
@@ -542,13 +544,6 @@ def callback_query(call):
                 parse_mode="Markdown"
             )
 
-        except Exception:
-            bot.send_message(
-                call.message.chat.id,
-                "💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
-                reply_markup=markup_gg,
-                parse_mode="Markdown"
-            )
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
         dados_db = db.carregar_dados()
