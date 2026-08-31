@@ -1,6 +1,6 @@
 """
 Arquivo Principal - Don Ghost Bot (Versão Mercado Pago)
-Versão Profissional Completa • Banner Dinâmico + GGs Casados + Pix Mercado Pago + Lote Gifts
+Versão Profissional Completa • Banner Dinâmico + GGs Casados + Pix Mercado Pago + Lote Gifts + Gestão de Preço por BIN
 """
 import os
 import logging
@@ -40,7 +40,6 @@ def webhook_mercadopago():
         if not dados_notificacao:
             return jsonify({"status": "error"}), 400
 
-        # O Mercado Pago costuma mandar notificações de tipo "payment"
         tipo_evento = dados_notificacao.get("type") or dados_notificacao.get("topic")
         
         payment_id = None
@@ -50,7 +49,6 @@ def webhook_mercadopago():
             payment_id = dados_notificacao.get("id")
 
         if payment_id:
-            # Consulta o pagamento diretamente na API oficial do Mercado Pago para garantir segurança
             headers = {"Authorization": f"Bearer {MP_ACCESS_TOKEN}"}
             resp = requests.get(f"https://api.mercadopago.com/v1/payments/{payment_id}", headers=headers, timeout=10)
             
@@ -181,7 +179,7 @@ def main_menu(user_id):
     
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
-        types.InlineKeyboardButton("💳 Comprar GGs (R$ 4.00)", callback_data="menu_gg"),
+        types.InlineKeyboardButton("💳 Comprar GGs", callback_data="menu_gg"),
         types.InlineKeyboardButton("💳 Fazer Recarga Pix", callback_data="menu_recarga"),
         types.InlineKeyboardButton("👤 Meu Perfil", callback_data="perfil"),
         types.InlineKeyboardButton("📦 Minhas Compras", callback_data="historico_compras"),
@@ -282,7 +280,14 @@ def cmd_admin(message):
     texto = (
         f"👑 **Painel Administrativo • Don Ghost**\n\n"
         f"📊 Clientes: `{clientes}` | Vendas: `{total_vendas}` | Faturamento: `R$ {faturamento:.2f}`\n"
-        f"⚡ Bônus Atual Ativo: `{p_bonus:.0f}%`\n"
+        f"⚡ Bônus Atual Ativo: `{p_bonus:.0f}%`\n\n"
+        f"⚙️ **Comandos úteis de Admin:**\n"
+        f"• `/abastecer [bin]` - Adicionar GGs em lote\n"
+        f"• `/set_preco [bin] [valor]` - Definir preço de uma BIN\n"
+        f"• `/set_bonus [porcentagem] [dias]` - Configurar bônus\n"
+        f"• `/add_dados` - Adicionar dados do titular\n"
+        f"• `/gerar_gift [qtd] [valor]` - Gerar gifts\n"
+        f"• `/limpar_estoque` - Limpar vendidos"
     )
     bot.send_message(message.chat.id, texto, parse_mode="Markdown")
 
@@ -309,6 +314,24 @@ def cmd_set_bonus(message):
     dados["configuracoes"]["bonus_expira_em"] = expira_em
     db.salvar_dados(dados)
     bot.reply_to(message, f"✅ **Promoção Configurada!** Bônus: `{porcentagem:.0f}%` por `{dias} dia(s)`", parse_mode="Markdown")
+
+@bot.message_handler(commands=['set_preco'])
+def cmd_set_preco(message):
+    if message.from_user.id != config.ADMIN_ID:
+        return
+    args = message.text.split()
+    if len(args) < 3:
+        bot.reply_to(message, "⚠️ Uso correto: `/set_preco [bin] [valor]`\n*Ex:* `/set_preco 422061 3.0`", parse_mode="Markdown")
+        return
+    try:
+        bin_code = "".join(filter(str.isdigit, args[1]))[:6]
+        preco = float(args[2].replace(',', '.'))
+    except ValueError:
+        bot.reply_to(message, "❌ Valores inválidos.", parse_mode="Markdown")
+        return
+    
+    db.definir_preco_bin(bin_code, preco)
+    bot.reply_to(message, f"✅ **Preço atualizado!** BIN `{bin_code}` agora custa `R$ {preco:.2f}`.", parse_mode="Markdown")
 
 @bot.message_handler(commands=['abastecer'])
 def cmd_abastecer_etapa1(message):
@@ -356,7 +379,7 @@ def processar_etapa2(message):
             return
 
         db.adicionar_lote_estoque(cartoes, categoria='gg', bin=bin6, banco=banco, bandeira=bandeira)
-        msg_sucesso = f"✅ **Estoque Atualizado!** Adicionadas `{len(cartoes)} GGs`!"
+        msg_sucesso = f"✅ **Estoque Atualizado!** Adicionadas `{len(cartoes)} GGs` para a BIN `{bin6}`!"
         bot.reply_to(message, msg_sucesso, parse_mode="Markdown")
 
 @bot.message_handler(commands=['add_dados'])
@@ -443,7 +466,6 @@ def cmd_pix_customizado(message):
         bot.reply_to(message, "⚠️ O valor mínimo para recarga via Pix é de **R$ 10,00**.", parse_mode="Markdown")
         return
 
-    # Integração oficial Mercado Pago (Pix)
     headers = {
         "Authorization": f"Bearer {MP_ACCESS_TOKEN}",
         "Content-Type": "application/json"
@@ -486,7 +508,6 @@ def callback_query(call):
     user_id = call.from_user.id
     data = call.data
     
-    # GARANTE QUE TODOS OS BOTÕES DÃO RETORNO VISUAL (FIM DO BUG DE TRAVAMENTO)
     try:
         bot.answer_callback_query(call.id)
     except Exception:
@@ -541,14 +562,16 @@ def callback_query(call):
             bot.send_message(call.message.chat.id, "❌ Sem GGs disponíveis no momento.")
             return
         markup = types.InlineKeyboardMarkup(row_width=1)
-        for bin_code, bandeira, total_qtd in ggs:
-            markup.add(types.InlineKeyboardButton(f"💳 {bandeira} ({bin_code}) • Estoque: {total_qtd} (R$ 4,00)", callback_data=f"comprar_gg_{bin_code}"))
+        for bin_code, bandeira, total_qtd, preco_bin in ggs:
+            markup.add(types.InlineKeyboardButton(f"💳 {bandeira} ({bin_code}) • Estoque: {total_qtd} (R$ {preco_bin:.2f})", callback_data=f"comprar_gg_{bin_code}"))
         markup.add(types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu"))
         bot.send_message(call.message.chat.id, "💳 **SELECIONE A BIN:**", reply_markup=markup, parse_mode="Markdown")
         
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
-        status, res_gg, res_dados, banco_item, bandeira_item, bin_item = db.realizar_compra_item_casado(user_id, 'gg', 4.0, bin_v=bin_escolhida)
+        preco_bin = db.obter_preco_bin(bin_escolhida)
+        
+        status, res_gg, res_dados, banco_item, bandeira_item, bin_item = db.realizar_compra_item_casado(user_id, 'gg', preco_bin, bin_v=bin_escolhida)
         
         if status == "ok":
             partes_cartao = res_gg.split('|')
