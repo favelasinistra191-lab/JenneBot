@@ -266,42 +266,27 @@ def callback_verificar_inscricao(call):
 def cmd_abastecer(message):
     if message.from_user.id != config.ADMIN_ID:
         return
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2:
-        bot.reply_to(message, "⚠️ Use: `/abastecer [BIN]` e envie as linhas na mensagem seguinte.", parse_mode="Markdown")
-        return
-    bin_alvo = "".join(filter(str.isdigit, args[1]))[:6]
     
-    # Salva o estado para aguardar o texto com as GGs na próxima mensagem
-    ESTADOS_USUARIO[message.from_user.id] = {"acao": "abastecer_gg", "bin": bin_alvo}
-    bot.reply_to(message, f"📥 Envie agora o texto com as GGs para a BIN `{bin_alvo}`.", parse_mode="Markdown")
-
-@bot.message_handler(func=lambda m: m.from_user.id in ESTADOS_USUARIO)
-def receber_texto_abastecer(message):
-    estado = ESTADOS_USUARIO.pop(message.from_user.id, None)
-    if not estado:
-        return
+    # Pega tudo o que vem depois do comando /abastecer
+    texto_total = message.text or ""
+    partes = texto_total.split("\n")
+    primeira_linha = partes[0].split()
     
-    texto_bruto = message.text or ""
-    linhas = [l.strip() for l in texto_bruto.split("\n") if l.strip()]
-    if not linhas:
-        bot.reply_to(message, "❌ Nenhuma linha válida encontrada.")
+    if len(primeira_linha) < 2:
+        bot.reply_to(message, "⚠️ Use: `/abastecer [BIN]\n[Cole as GGs aqui na mesma mensagem ou envie depois]`", parse_mode="Markdown")
         return
         
-    bin_alvo = estado["bin"]
-    db.adicionar_lote_estoque(linhas, categoria="gg", bin=bin_alvo)
-    bot.reply_to(message, f"✅ Sucesso! Adicionadas {len(linhas)} GGs na BIN `{bin_alvo}`.", parse_mode="Markdown")
+    bin_alvo = "".join(filter(str.isdigit, primeira_linha[1]))[:6]
+    
+    # Se mandou as GGs na mesma mensagem logo abaixo do comando
+    if len(partes) > 1:
+        linhas = [l.strip() for l in partes[1:] if l.strip()]
+        if linhas:
+            db.adicionar_lote_estoque(linhas, categoria="gg", bin=bin_alvo)
+            bot.reply_to(message, f"✅ Sucesso! Adicionadas {len(linhas)} GGs na BIN `{bin_alvo}`.", parse_mode="Markdown")
+            return
 
-@bot.message_handler(commands=['abastecer'])
-def cmd_abastecer(message):
-    if message.from_user.id != config.ADMIN_ID:
-        return
-    args = message.text.split(maxsplit=1)
-    if len(args) < 2:
-        bot.reply_to(message, "⚠️ Use: `/abastecer [BIN]` e envie as linhas na mensagem seguinte.", parse_mode="Markdown")
-        return
-    bin_alvo = ''.join(filter(str.isdigit, args[1]))[:6]
-    bot.reply_to(message, f"📥 Envie agora o arquivo ou texto com as GGs para a BIN `{bin_alvo}`.", parse_mode="Markdown")
+    bot.reply_to(message, f"📥 BIN `{bin_alvo}` definida. Agora mande as linhas de GGs.", parse_mode="Markdown")
 
 @bot.message_handler(commands=['set_preco'])
 def cmd_set_preco(message):
