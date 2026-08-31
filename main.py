@@ -598,14 +598,14 @@ def callback_query(call):
                 f"⏰ TEMPO MAXIMO PARA REEMBOLSO: {tempo_reembolso} (10 minutos)"
             )
             bot.send_message(call.message.chat.id, msg, parse_message="Markdown")
-        elif status == "saldo_insuficiente":
-            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente! Faça uma recarga Pix.")
+                elif status == "saldo_insuficiente":
+            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
         elif status == "falta_dados":
             bot.send_message(call.message.chat.id, "⚠️ Estoque sem dados de titular suficientes.")
         else:
             bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
             
-        elif data == "voltar_menu":
+    if data == "voltar_menu":
         text, markup = main_menu(user_id)
         try: 
             bot.delete_message(call.message.chat.id, call.message.message_id)
