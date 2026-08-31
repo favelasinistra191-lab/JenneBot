@@ -10,3 +10,4 @@ psycopg2-binary
 pyTelegramBotAPI
 python-dotenv
 cryptography
+mercadopago>=2.0.0
