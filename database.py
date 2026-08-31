@@ -1,6 +1,6 @@
 """
 Módulo de Banco de Dados • Don Ghost Bot
-Gerenciamento de Cache, GitHub, Usuários, Indicação Automática, Promoções, Histórico e Banner
+Gerenciamento de Cache, GitHub, Usuários, Indicação Automática, Promoções, Histórico e Preços por BIN
 """
 import os
 import json
@@ -29,10 +29,11 @@ def carregar_dados(forcar_atualizacao=False):
         "gift_cards": [], 
         "dados_titular": [],
         "admin_pendente": {},
+        "precos_bin": {}, # Novo: Dicionário para gerenciar preço customizado por BIN (ex: {"422061": 3.0})
         "configuracoes": {
             "bonus_porcentagem": 100.0, 
             "bonus_expira_em": None,
-            "banner_file_id": None  # Novo: Salva a foto do bot permanentemente
+            "banner_file_id": None
         }
     }
     
@@ -40,8 +41,8 @@ def carregar_dados(forcar_atualizacao=False):
         if os.path.exists(FILE_PATH):
             with open(FILE_PATH, "r", encoding="utf-8") as f:
                 dados = json.load(f)
-                if "admin_pendente" not in dados:
-                    dados["admin_pendente"] = {}
+                if "admin_pendente" not in dados: dados["admin_pendente"] = {}
+                if "precos_bin" not in dados: dados["precos_bin"] = {}
                 if "configuracoes" not in dados:
                     dados["configuracoes"] = {"bonus_porcentagem": 100.0, "bonus_expira_em": None, "banner_file_id": None}
                 _cache_dados = dados
@@ -58,8 +59,8 @@ def carregar_dados(forcar_atualizacao=False):
             file_content = response.json().get("content")
             decoded_bytes = base64.b64decode(file_content)
             dados = json.loads(decoded_bytes.decode("utf-8"))
-            if "admin_pendente" not in dados:
-                dados["admin_pendente"] = {}
+            if "admin_pendente" not in dados: dados["admin_pendente"] = {}
+            if "precos_bin" not in dados: dados["precos_bin"] = {}
             if "configuracoes" not in dados:
                 dados["configuracoes"] = {"bonus_porcentagem": 100.0, "bonus_expira_em": None, "banner_file_id": None}
             _cache_dados = dados
@@ -139,11 +140,31 @@ def obter_saldo(user_id):
             return float(u.get("saldo", 0.0))
     return 0.0
 
+def obter_preco_bin(bin_code):
+    dados = carregar_dados()
+    precos = dados.get("precos_bin", {})
+    return float(precos.get(bin_code, 4.0)) # Padrão R$ 4,00 se não definido
+
+def definir_preco_bin(bin_code, preco):
+    dados = carregar_dados(forcar_atualizacao=True)
+    if "precos_bin" not in dados:
+        dados["precos_bin"] = {}
+    dados["precos_bin"][bin_code] = preco
+    salvar_dados(dados)
+
 def obter_dados_relatorio():
     dados = carregar_dados()
     clientes = len(dados.get("usuarios", []))
     vendas = len([e for e in dados.get("estoque", []) if e.get("vendido") == 1])
-    faturamento = sum([4.0 for e in dados.get("estoque", []) if e.get("vendido") == 1])
+    
+    # Calcula faturamento real baseado no preço de cada item comprado ou padrão
+    faturamento = 0.0
+    precos = dados.get("precos_bin", {})
+    for e in dados.get("estoque", []):
+        if e.get("vendido") == 1:
+            b_code = e.get("bin", "000000")
+            faturamento += float(precos.get(b_code, 4.0))
+            
     return vendas, faturamento, clientes
 
 def adicionar_lote_estoque(lista_itens, categoria, bin="000000", banco="GERAL", bandeira="GERAL"):
@@ -187,6 +208,7 @@ def adicionar_lote_dados_titular(lista_titulares):
 def listar_estoque_gg_agrupado():
     dados = carregar_dados()
     estoque = dados.get("estoque", [])
+    precos = dados.get("precos_bin", {})
     
     agrupado = {}
     for item in estoque:
@@ -196,7 +218,12 @@ def listar_estoque_gg_agrupado():
             key = (b, band)
             agrupado[key] = agrupado.get(key, 0) + 1
             
-    return [(b, band, qtd) for (b, band), qtd in agrupado.items()]
+    # Retornatupla com (bin, bandeira, quantidade, preço)
+    resultado = []
+    for (b, band), qtd in agrupado.items():
+        preco = float(precos.get(b, 4.0))
+        resultado.append((b, band, qtd, preco))
+    return resultado
 
 def obter_historico_compras(user_id):
     dados = carregar_dados()
