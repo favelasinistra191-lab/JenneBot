@@ -244,10 +244,22 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     if not titular_escolhido:
         return "falta_dados", None, None, None, None, None
 
+    # Desconta o saldo do usuário
     user["saldo"] -= preco
-    item_escolhido["vendido"] = 1
-    item_escolhido["comprado_por"] = user_id
-    titular_escolhido["usado"] = 1
+
+    # Pega os dados para retornar ao comprador
+    conteudo_gg = item_escolhido["conteudo"]
+    conteudo_titular = titular_escolhido["conteudo"]
+    banco = item_escolhido["banco"]
+    bandeira = item_escolhido["bandeira"]
+    bin_codigo = item_escolhido["bin"]
+
+    # APAGA DEFINITIVAMENTE DO BANCO (Remove as linhas vendidas/usadas para não acumular lixo)
+    estoque.remove(item_escolhido)
+    titulares.remove(titular_escolhido)
+
+    dados["estoque"] = estoque
+    dados["dados_titular"] = titulares
 
     salvar_dados(dados)
-    return "ok", item_escolhido["conteudo"], titular_escolhido["conteudo"], item_escolhido["banco"], item_escolhido["bandeira"], item_escolhido["bin"]
+    return "ok", conteudo_gg, conteudo_titular, banco, bandeira, bin_codigo
