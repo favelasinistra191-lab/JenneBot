@@ -224,7 +224,7 @@ def listar_estoque_gg_agrupado():
 def obter_historico_compras(user_id):
     dados = carregar_dados()
     estoque = dados.get("estoque", [])
-    return [e for e in estoque if e.get("vendido") == 1 and e.get("comprado_por"] == user_id]
+        return [e for e in estoque if e.get("vendido") == 1 and e.get("comprado_por") == user_id]
 
 def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     dados = carregar_dados(forcar_atualizacao=True)
