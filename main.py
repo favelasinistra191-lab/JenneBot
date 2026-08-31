@@ -556,10 +556,65 @@ def callback_query(call):
             texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
         bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
 
+    elif data == "menu_gg":
+        # Verificando se há itens em estoque para listar as BINs ou avisar que está vazio
+        dados_db = db.carregar_dados()
+        estoque = dados_db.get("estoque", [])
+        bins_disponiveis = {}
+
+        for item in estoque:
+            if item.get("categoria") == "gg" and item.get("vendido", 0) == 0:
+                bin_code = item.get("bin")
+                if bin_code:
+                    if bin_code not in bins_disponiveis:
+                        bins_disponiveis[bin_code] = {
+                            "banco": item.get("banco", "GERAL"),
+                            "bandeira": item.get("bandeira", "OUTRA"),
+                            "quantidade": 0
+                        }
+                    bins_disponiveis[bin_code]["quantidade"] += 1
+
+        if not bins_disponiveis:
+            # AQUI ESTÁ O RETORNO QUANDO NÃO HÁ NENHUM ESTOQUE DE GG (Evita botão fantasma)
+            bot.answer_callback_query(call.id, "⚠️ No momento não há nenhuma GG disponível em estoque!", show_alert=True)
+            return
+
+        markup_gg = types.InlineKeyboardMarkup(row_width=1)
+        for bin_code, info in bins_disponiveis.items():
+            preco_bin = db.obter_preco_bin(bin_code)
+            texto_botao = f"💳 {info['bandeira']} - {info['banco']} ({bin_code[:4]}**) | Qtd: {info['quantidade']} | R$ {preco_bin:.2f}"
+            markup_gg.add(types.InlineKeyboardButton(texto_botao, callback_data=f"comprar_gg_{bin_code}"))
+
+        markup_gg.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
+        
+        try:
+            bot.edit_message_text(
+                text="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
+                chat_id=call.message.chat.id,
+                message_id=call.message.message_id,
+                reply_markup=markup_gg,
+                parse_mode="Markdown"
+            )
+        except Exception:
+            bot.send_message(
+                call.message.chat.id,
+                text="💳 **ESCOLHA A BIN / CARTÃO DESEJADO:**",
+                reply_markup=markup_gg,
+                parse_mode="Markdown"
+            )
+
     elif data.startswith("comprar_gg_"):
         bin_escolhida = data.split("_")[2]
-        preco_bin = db.obter_preco_bin(bin_escolhida)
         
+        # Validação extra de estoque antes de efetuar a compra para evitar falha silenciosa
+        dados_db = db.carregar_dados()
+        estoque_atual = [e for e in dados_db.get("estoque", []) if e.get("categoria") == "gg" and e.get("bin") == bin_escolhida and e.get("vendido", 0) == 0]
+        
+        if not estoque_atual:
+            bot.answer_callback_query(call.id, "⚠️ Estoque esgotado para esta BIN!", show_alert=True)
+            return
+
+        preco_bin = db.obter_preco_bin(bin_escolhida)
         status, res_gg, res_dados, banco_item, bandeira_item, bin_item = db.realizar_compra_item_casado(user_id, 'gg', preco_bin, bin_v=bin_escolhida)
         
         if status == "ok":
@@ -588,11 +643,11 @@ def callback_query(call):
             )
             bot.send_message(call.message.chat.id, msg, parse_mode="Markdown")
         elif status == "saldo_insuficiente":
-            bot.send_message(call.message.chat.id, "❌ Saldo insuficiente.")
+            bot.answer_callback_query(call.id, "❌ Saldo insuficiente.", show_alert=True)
         elif status == "falta_dados":
-            bot.send_message(call.message.chat.id, "⚠️ Estoque sem dados de titular suficientes.")
+            bot.answer_callback_query(call.id, "⚠️ Estoque sem dados de titular suficientes.", show_alert=True)
         else:
-            bot.send_message(call.message.chat.id, "❌ Estoque esgotado para esta BIN.")
+            bot.answer_callback_query(call.id, "❌ Estoque esgotado para esta BIN.", show_alert=True)
             
     elif data == "voltar_menu":
         text, markup = main_menu(user_id)
