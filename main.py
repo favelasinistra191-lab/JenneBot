@@ -479,7 +479,17 @@ def callback_query(call):
             texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
         bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
 
-        elif data == "menu_recarca":
+            elif data == "historico_compras":
+        historico = db.obter_historico_compras(user_id)
+        if not historico:
+            bot.send_message(call.message.chat.id, "📦 Você ainda não realizou compras.", parse_mode="Markdown")
+            return
+        texto_hist = "📦 **HISTÓRICO DE COMPRAS (GGs)**\n───────────────────────────────\n"
+        for item in historico[-10:]:
+            texto_hist += f"💳 `{item['conteudo']}`\n🏦 `{item['banco']} / {item['bandeira']}`\n───────────────────────────────\n"
+        bot.send_message(call.message.chat.id, texto_hist, parse_mode="Markdown")
+
+    elif data == "menu_recarca":
         texto_rec = (
             "💎 **FAZER RECARGA VIA PIX**\n\n"
             "Para adicionar saldo na sua conta de forma automática, envie o comando seguido do valor desejado.\n"
@@ -492,6 +502,7 @@ def callback_query(call):
             bot.edit_message_text(text=texto_rec, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=markup_rec, parse_mode="Markdown")
         except Exception:
             bot.send_message(call.message.chat.id, texto_rec, reply_markup=markup_rec, parse_mode="Markdown")
+
 
     elif data == "menu_gg":
         dados_db = db.carregar_dados()
