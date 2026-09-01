@@ -1,32 +1,21 @@
 import os
 import json
-import socket
 import psycopg2
 import psycopg2.extras
 import config
 from datetime import datetime
 
 def obter_conexao():
-    url = config.DATABASE_URL
-    if url:
-        # Se for o Supabase, injeta o parâmetro option ou força a resolução limpando o IPv6 se necessário,
-        # mas a forma mais garantida no psycopg2 é substituir temporariamente o host pela versão resolvida em IPv4 ou usar o pooler correto.
-        # Vamos forçar o host a resolver para o IP v4 diretamente na string de conexão:
-        try:
-            from urllib.parse import urlparse, urlunparse
-            parsed = urlparse(url)
-            # Resolve o hostname para IP IPv4 explicitamente
-            ipv4_addr = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
-            # Reconstrói a URL trocando o domínio pelo IP IPv4 para o Render não tentar IPv6
-            netloc = f"{parsed.username}:{parsed.password}@{ipv4_addr}:{parsed.port or 5432}" if parsed.username else f"{ipv4_addr}:{parsed.port or 5432}"
-            new_parsed = parsed._replace(netloc=netloc)
-            url = urlunparse(new_parsed)
-        except Exception:
-            pass
-            
-        return psycopg2.connect(url, sslmode='require')
-    else:
-        return psycopg2.connect("dbname=donghost user=postgres password=postgres")
+    # Força a URL exata do pooler na porta 6543 com o usuário correto do Supabase,
+    # contornando completamente o problema de IPv6 do Render.
+    url_forçada = "postgresql://postgres.ibwndysxzqczxcyyfqwt:8Dedezembro@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
+    
+    # Se houver configuração no config, tenta usar, mas se for o host problemático, usa o pooler direto
+    url = config.DATABASE_URL if config.DATABASE_URL else url_forçada
+    if "supabase.co" in url and not "pooler" in url:
+        url = url_forçada
+        
+    return psycopg2.connect(url, sslmode='require')
 
 def criar_tabelas():
     conn = obter_conexao()
