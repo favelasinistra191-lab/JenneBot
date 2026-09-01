@@ -26,7 +26,6 @@ def carregar_json():
             conteudo = json.load(f)
             if not isinstance(conteudo, dict):
                 return estrutura_padrao
-            # Garante que todas as chaves essenciais existam
             for chave in estrutura_padrao:
                 if chave not in conteudo:
                     conteudo[chave] = estrutura_padrao[chave]
@@ -173,7 +172,6 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     item_escolhido["vendido"] = 1
     dado_escolhido["usado"] = 1
     
-    # Deduz saldo
     for u in dados.get("usuarios", []):
         if u["user_id"] == user_id:
             u["saldo"] = float(u.get("saldo", 0.0)) - preco
@@ -201,4 +199,4 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
 def obter_historico_compras(user_id):
     dados = carregar_json()
     compras = dados.get("compras", [])
-    return [c for c in compras if c.get("user_id"] == user_id]
+    return [c for c in compras if c.get("user_id") == user_id]
