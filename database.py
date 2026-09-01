@@ -6,19 +6,25 @@ import psycopg2.extras
 import config
 from datetime import datetime
 
-# Hack de socket para forçar IPv4 e evitar o bloqueio "Network is unreachable" do Render
-_original_getaddrinfo = socket.getaddrinfo
-
-def _forced_ipv4_getaddrinfo(host, port, family=0, socktype=0, proto=0, flags=0):
-    if host and "supabase" in host:
-        family = socket.AF_INET
-    return _original_getaddrinfo(host, port, family, socktype, proto, flags)
-
-socket.getaddrinfo = _forced_ipv4_getaddrinfo
-
 def obter_conexao():
-    if config.DATABASE_URL:
-        return psycopg2.connect(config.DATABASE_URL, sslmode='require')
+    url = config.DATABASE_URL
+    if url:
+        # Se for o Supabase, injeta o parâmetro option ou força a resolução limpando o IPv6 se necessário,
+        # mas a forma mais garantida no psycopg2 é substituir temporariamente o host pela versão resolvida em IPv4 ou usar o pooler correto.
+        # Vamos forçar o host a resolver para o IP v4 diretamente na string de conexão:
+        try:
+            from urllib.parse import urlparse, urlunparse
+            parsed = urlparse(url)
+            # Resolve o hostname para IP IPv4 explicitamente
+            ipv4_addr = socket.getaddrinfo(parsed.hostname, parsed.port or 5432, socket.AF_INET, socket.SOCK_STREAM)[0][4][0]
+            # Reconstrói a URL trocando o domínio pelo IP IPv4 para o Render não tentar IPv6
+            netloc = f"{parsed.username}:{parsed.password}@{ipv4_addr}:{parsed.port or 5432}" if parsed.username else f"{ipv4_addr}:{parsed.port or 5432}"
+            new_parsed = parsed._replace(netloc=netloc)
+            url = urlunparse(new_parsed)
+        except Exception:
+            pass
+            
+        return psycopg2.connect(url, sslmode='require')
     else:
         return psycopg2.connect("dbname=donghost user=postgres password=postgres")
 
