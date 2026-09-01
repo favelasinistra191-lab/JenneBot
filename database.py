@@ -6,11 +6,9 @@ import config
 from datetime import datetime
 
 def obter_conexao():
-    # Força a URL exata do pooler na porta 6543 com o usuário correto do Supabase,
-    # contornando completamente o problema de IPv6 do Render.
+    # URL do pooler já ajustada com o usuário completo do seu projeto Supabase
     url_forçada = "postgresql://postgres.ibwndysxzqczxcyyfqwt:8Dedezembro@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
     
-    # Se houver configuração no config, tenta usar, mas se for o host problemático, usa o pooler direto
     url = config.DATABASE_URL if config.DATABASE_URL else url_forçada
     if "supabase.co" in url and not "pooler" in url:
         url = url_forçada
