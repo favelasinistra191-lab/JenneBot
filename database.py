@@ -1,12 +1,20 @@
 import os
 import json
+import socket
 import psycopg2
 import psycopg2.extras
 import config
 from datetime import datetime
 
 def obter_conexao():
-    url = "postgresql://postgres:8Dedezembro@db.ibwndysxzqczxcyyfqwt.supabase.co:5432/postgres"
+    # Força a resolução para IPv4 para contornar o bloqueio de rede do Render
+    host = "db.ibwndysxzqczxcyyfqwt.supabase.co"
+    try:
+        ip_v4 = socket.getaddrinfo(host, 5432, socket.AF_INET)[0][4][0]
+    except Exception:
+        ip_v4 = host
+
+    url = f"postgresql://postgres:8Dedezembro@{ip_v4}:5432/postgres"
     return psycopg2.connect(url, sslmode='require')
 
 def criar_tabelas():
