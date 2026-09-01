@@ -6,13 +6,8 @@ import config
 from datetime import datetime
 
 def obter_conexao():
-    # URL do pooler já ajustada com o usuário completo do seu projeto Supabase
-    url_forçada = "postgresql://postgres.ibwndysxzqczxcyyfqwt:8Dedezembro@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
-    
-    url = config.DATABASE_URL if config.DATABASE_URL else url_forçada
-    if "supabase.co" in url and not "pooler" in url:
-        url = url_forçada
-        
+    # String de conexão oficial utilizando o seu banco do Supabase na porta padrão 5432
+    url = "postgresql://postgres:8Dedezembro@db.ibwndysxzqczxcyyfqwt.supabase.co:5432/postgres"
     return psycopg2.connect(url, sslmode='require')
 
 def criar_tabelas():
@@ -227,4 +222,4 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
 def obter_historico_compras(user_id):
     dados = carregar_dados()
     compras = dados.get("compras", [])
-    return [c for c in compras if c.get("user_id") == user_id]
+    return [c for c in compras if c.get("user_id"] == user_id]
