@@ -7,12 +7,15 @@ import config
 from datetime import datetime
 
 def obter_conexao():
-    # Força a resolução para IPv4 para contornar o bloqueio de rede do Render
+    # Força a resolução estrita para IPv4 para contornar o bloqueio de rede do Render
     host = "db.ibwndysxzqczxcyyfqwt.supabase.co"
+    ip_v4 = host
     try:
-        ip_v4 = socket.getaddrinfo(host, 5432, socket.AF_INET)[0][4][0]
+        infos = socket.getaddrinfo(host, 5432, socket.AF_INET, socket.SOCK_STREAM)
+        if infos:
+            ip_v4 = infos[0][4][0]
     except Exception:
-        ip_v4 = host
+        pass
 
     url = f"postgresql://postgres:8Dedezembro@{ip_v4}:5432/postgres"
     return psycopg2.connect(url, sslmode='require')
