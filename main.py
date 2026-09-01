@@ -121,6 +121,7 @@ def main_menu(user_id):
         f"🔥 *As melhores notícias do mercado, GGs de alta qualidade e aprovação expressa.*"
     )
     
+    # Removido o botão de Indique e Ganhe conforme solicitado
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
         types.InlineKeyboardButton("💳 Comprar GGs", callback_data="menu_gg"),
@@ -537,7 +538,6 @@ if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     LOG.info("Bot rodando com Mercado Pago...")
     
-    # Remove webhook pendente para garantir conexão limpa via polling único
     try: 
         bot.remove_webhook()
     except Exception: 
