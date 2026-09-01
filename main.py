@@ -536,6 +536,8 @@ def callback_query(call):
 if __name__ == "__main__":
     threading.Thread(target=run_web_server, daemon=True).start()
     LOG.info("Bot rodando com Mercado Pago...")
+    
+    # Remove webhook pendente para garantir conexão limpa via polling único
     try: 
         bot.remove_webhook()
     except Exception: 
