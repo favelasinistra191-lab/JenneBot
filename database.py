@@ -2,42 +2,47 @@ import os
 import json
 from datetime import datetime
 
-# Nome dos arquivos JSON locais
-ARQUIVO_CLIENTES = "clientes_dados.json"
-ARQUIVO_ESTOQUE = "estoque_gg.json"
+ARQUIVO_DADOS = "dados.json"
 
-def carregar_json(caminho, estrutura_padrao):
-    if not os.path.exists(caminho):
-        salvar_json(caminho, estrutura_padrao)
+def carregar_json():
+    estrutura_padrao = {
+        "usuarios": [],
+        "estoque": [],
+        "gift_cards": [],
+        "dados_titular": [],
+        "admin_pendente": {},
+        "precos_bin": {},
+        "configuracoes": {
+            "bonus_porcentagem": 100.0,
+            "bonus_expira_em": None,
+            "banner_file_id": None
+        }
+    }
+    if not os.path.exists(ARQUIVO_DADOS):
+        salvar_json(estrutura_padrao)
         return estrutura_padrao
     try:
-        with open(caminho, "r", encoding="utf-8") as f:
+        with open(ARQUIVO_DADOS, "r", encoding="utf-8") as f:
             conteudo = json.load(f)
-            if not isinstance(conteudo, type(estrutura_padrao)):
+            if not isinstance(conteudo, dict):
                 return estrutura_padrao
+            # Garante que todas as chaves essenciais existam
+            for chave in estrutura_padrao:
+                if chave not in conteudo:
+                    conteudo[chave] = estrutura_padrao[chave]
             return conteudo
     except Exception:
         return estrutura_padrao
 
-def salvar_json(caminho, dados):
-    with open(caminho, "w", encoding="utf-8") as f:
+def salvar_json(dados):
+    with open(ARQUIVO_DADOS, "w", encoding="utf-8") as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
 
 def criar_tabelas():
-    # Garante que os arquivos JSON existam com a estrutura completa e correta
-    carregar_json(ARQUIVO_CLIENTES, {
-        "usuarios": [],
-        "compras": [],
-        "gifts": []
-    })
-    carregar_json(ARQUIVO_ESTOQUE, {
-        "estoque": [],
-        "dados_titular": [],
-        "precos_bin": {}
-    })
+    carregar_json()
 
 def garantir_usuario(user_id, primeiro_nome, username):
-    dados = carregar_json(ARQUIVO_CLIENTES, {"usuarios": [], "compras": [], "gifts": []})
+    dados = carregar_json()
     usuarios = dados.get("usuarios", [])
     
     encontrado = False
@@ -54,26 +59,26 @@ def garantir_usuario(user_id, primeiro_nome, username):
             "saldo": 0.0
         })
         dados["usuarios"] = usuarios
-        salvar_json(ARQUIVO_CLIENTES, dados)
+        salvar_json(dados)
 
 def obter_saldo(user_id):
-    dados = carregar_json(ARQUIVO_CLIENTES, {"usuarios": [], "compras": [], "gifts": []})
+    dados = carregar_json()
     for u in dados.get("usuarios", []):
         if u["user_id"] == user_id:
             return float(u.get("saldo", 0.0))
     return 0.0
 
 def alterar_saldo(user_id, valor):
-    dados = carregar_json(ARQUIVO_CLIENTES, {"usuarios": [], "compras": [], "gifts": []})
+    dados = carregar_json()
     for u in dados.get("usuarios", []):
         if u["user_id"] == user_id:
             u["saldo"] = float(u.get("saldo", 0.0)) + valor
-            salvar_json(ARQUIVO_CLIENTES, dados)
+            salvar_json(dados)
             return u["saldo"]
     return 0.0
 
 def obter_preco_bin(bin_code):
-    dados = carregar_json(ARQUIVO_ESTOQUE, {"estoque": [], "dados_titular": [], "precos_bin": {}})
+    dados = carregar_json()
     precos = dados.get("precos_bin", {})
     if bin_code in precos:
         return float(precos[bin_code])
@@ -81,35 +86,35 @@ def obter_preco_bin(bin_code):
     return config.PRECOS["gg"]
 
 def definir_preco_bin(bin_code, valor):
-    dados = carregar_json(ARQUIVO_ESTOQUE, {"estoque": [], "dados_titular": [], "precos_bin": {}})
+    dados = carregar_json()
     if "precos_bin" not in dados:
         dados["precos_bin"] = {}
     dados["precos_bin"][bin_code] = valor
-    salvar_json(ARQUIVO_ESTOQUE, dados)
+    salvar_json(dados)
 
 def adicionar_gift(codigo, valor):
-    dados = carregar_json(ARQUIVO_CLIENTES, {"usuarios": [], "compras": [], "gifts": []})
-    if "gifts" not in dados:
-        dados["gifts"] = []
-    dados["gifts"].append({"codigo": codigo, "valor": valor, "usado": 0})
-    salvar_json(ARQUIVO_CLIENTES, dados)
+    dados = carregar_json()
+    if "gift_cards" not in dados:
+        dados["gift_cards"] = []
+    dados["gift_cards"].append({"codigo": codigo, "valor": valor, "usado": 0})
+    salvar_json(dados)
 
 def resgatar_gift(user_id, codigo):
-    dados = carregar_json(ARQUIVO_CLIENTES, {"usuarios": [], "compras": [], "gifts": []})
-    gifts = dados.get("gifts", [])
+    dados = carregar_json()
+    gifts = dados.get("gift_cards", [])
     for g in gifts:
         if g["codigo"].upper() == codigo.upper():
             if g.get("usado", 0) == 1:
                 return "usado", 0.0
             g["usado"] = 1
             valor = float(g["valor"])
+            salvar_json(dados)
             alterar_saldo(user_id, valor)
-            salvar_json(ARQUIVO_CLIENTES, dados)
             return "ok", valor
     return "invalido", 0.0
 
 def adicionar_lote_estoque(linhas, categoria="gg", bin="GERAL"):
-    dados = carregar_json(ARQUIVO_ESTOQUE, {"estoque": [], "dados_titular": [], "precos_bin": {}})
+    dados = carregar_json()
     if "estoque" not in dados:
         dados["estoque"] = []
     if "dados_titular" not in dados:
@@ -128,14 +133,13 @@ def adicionar_lote_estoque(linhas, categoria="gg", bin="GERAL"):
                 "conteudo": linha.strip(),
                 "usado": 0
             })
-    salvar_json(ARQUIVO_ESTOQUE, dados)
+    salvar_json(dados)
 
 def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
-    cli_dados = carregar_json(ARQUIVO_CLIENTES, {"usuarios": [], "compras": [], "gifts": []})
-    est_dados = carregar_json(ARQUIVO_ESTOQUE, {"estoque": [], "dados_titular": [], "precos_bin": {}})
+    dados = carregar_json()
     
     saldo_atual = 0.0
-    for u in cli_dados.get("usuarios", []):
+    for u in dados.get("usuarios", []):
         if u["user_id"] == user_id:
             saldo_atual = float(u.get("saldo", 0.0))
             break
@@ -143,8 +147,8 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     if saldo_atual < preco:
         return "saldo_insuficiente", None, None, None, None, None
         
-    estoque = est_dados.get("estoque", [])
-    dados_titular = est_dados.get("dados_titular", [])
+    estoque = dados.get("estoque", [])
+    dados_titular = dados.get("dados_titular", [])
     
     item_escolhido = None
     for item in estoque:
@@ -169,8 +173,8 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     item_escolhido["vendido"] = 1
     dado_escolhido["usado"] = 1
     
-    # Deduz o saldo do cliente
-    for u in cli_dados.get("usuarios", []):
+    # Deduz saldo
+    for u in dados.get("usuarios", []):
         if u["user_id"] == user_id:
             u["saldo"] = float(u.get("saldo", 0.0)) - preco
             
@@ -178,10 +182,10 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
     res_dados = dado_escolhido["conteudo"]
     bin_item = item_escolhido.get("bin", "GERAL")
     
-    if "compras" not in cli_dados:
-        cli_dados["compras"] = []
+    if "compras" not in dados:
+        dados["compras"] = []
         
-    cli_dados["compras"].append({
+    dados["compras"].append({
         "user_id": user_id,
         "categoria": categoria,
         "conteudo": res_gg,
@@ -191,11 +195,10 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
         "data": str(datetime.now())
     })
     
-    salvar_json(ARQUIVO_CLIENTES, cli_dados)
-    salvar_json(ARQUIVO_ESTOQUE, est_dados)
+    salvar_json(dados)
     return "ok", res_gg, res_dados, "BANCO DO BRASIL", "VISA", bin_item
 
 def obter_historico_compras(user_id):
-    dados = carregar_json(ARQUIVO_CLIENTES, {"usuarios": [], "compras": [], "gifts": []})
+    dados = carregar_json()
     compras = dados.get("compras", [])
-    return [c for c in compras if c.get("user_id") == user_id]
+    return [c for c in compras if c.get("user_id"] == user_id]
