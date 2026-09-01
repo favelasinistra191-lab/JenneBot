@@ -6,7 +6,6 @@ import config
 from datetime import datetime
 
 def obter_conexao():
-    # String de conexão oficial utilizando o seu banco do Supabase na porta padrão 5432
     url = "postgresql://postgres:8Dedezembro@db.ibwndysxzqczxcyyfqwt.supabase.co:5432/postgres"
     return psycopg2.connect(url, sslmode='require')
 
@@ -222,4 +221,4 @@ def realizar_compra_item_casado(user_id, categoria, preco, bin_v=None):
 def obter_historico_compras(user_id):
     dados = carregar_dados()
     compras = dados.get("compras", [])
-    return [c for c in compras if c.get("user_id"] == user_id]
+    return [c for c in compras if c.get("user_id") == user_id]
