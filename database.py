@@ -1,9 +1,20 @@
 import os
 import json
+import socket
 import psycopg2
 import psycopg2.extras
 import config
 from datetime import datetime
+
+# Hack de socket para forçar IPv4 e evitar o bloqueio "Network is unreachable" do Render
+_original_getaddrinfo = socket.getaddrinfo
+
+def _forced_ipv4_getaddrinfo(host, port, family=0, socktype=0, proto=0, flags=0):
+    if host and "supabase" in host:
+        family = socket.AF_INET
+    return _original_getaddrinfo(host, port, family, socktype, proto, flags)
+
+socket.getaddrinfo = _forced_ipv4_getaddrinfo
 
 def obter_conexao():
     if config.DATABASE_URL:
