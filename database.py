@@ -1,7 +1,6 @@
-# database.py
 import sqlite3
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 
 DB_NAME = "bot_telegram.db"
 
@@ -32,6 +31,14 @@ def init_db():
         )
     """)
 
+    # ------------------------- CONFIGURAÇÕES DO BOT -------------------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS config (
+            chave  TEXT PRIMARY KEY,
+            valor  TEXT
+        )
+    """)
+
     # ------------------------- PRODUTOS -------------------------
     cur.execute("""
         CREATE TABLE IF NOT EXISTS produtos (
@@ -46,19 +53,33 @@ def init_db():
         )
     """)
 
-    # ------------------------- CARDS / KEYS -------------------------
+    # ------------------------- ESTOQUE DE GGS (BINS) -------------------------
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS cards (
+        CREATE TABLE IF NOT EXISTS estoque_ggs (
             id             INTEGER PRIMARY KEY AUTOINCREMENT,
-            codigo         TEXT    UNIQUE NOT NULL,
             produto_id     INTEGER,
-            senha          TEXT,
+            bin            TEXT    NOT NULL,
+            bandeira       TEXT    NOT NULL,
+            conteudo       TEXT    UNIQUE NOT NULL,
             vendido        INTEGER NOT NULL DEFAULT 0,
             comprador_id   INTEGER,
             comprado_em    TEXT,
-            adicionado_por INTEGER,
             criado_em      TEXT,
-            FOREIGN KEY (produto_id) REFERENCES produtos (id) ON DELETE SET NULL
+            FOREIGN KEY (produto_id) REFERENCES produtos (id) ON DELETE CASCADE
+        )
+    """)
+
+    # ------------------------- ESTOQUE DE DADOS (NOMES/CPFS) -------------------------
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS estoque_dados (
+            id             INTEGER PRIMARY KEY AUTOINCREMENT,
+            produto_id     INTEGER,
+            conteudo       TEXT    UNIQUE NOT NULL,
+            vendido        INTEGER NOT NULL DEFAULT 0,
+            comprador_id   INTEGER,
+            comprado_em    TEXT,
+            criado_em      TEXT,
+            FOREIGN KEY (produto_id) REFERENCES produtos (id) ON DELETE CASCADE
         )
     """)
 
@@ -113,6 +134,28 @@ def _now():
 
 
 # =====================================================================
+# CONFIGURAÇÕES (FOTO / TEXTO START)
+# =====================================================================
+def set_config(chave, valor):
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO config (chave, valor) VALUES (?, ?)
+        ON CONFLICT(chave) DO UPDATE SET valor = ?
+    """, (chave, valor, valor))
+    conn.commit()
+    conn.close()
+
+
+def get_config(chave):
+    conn = get_conn()
+    cur = conn.cursor()
+    row = cur.execute("SELECT valor FROM config WHERE chave = ?", (chave,)).fetchone()
+    conn.close()
+    return row["valor"] if row else None
+
+
+# =====================================================================
 # USUARIOS
 # =====================================================================
 def registrar_usuario(user_id, username=None, first_name=None):
@@ -143,7 +186,6 @@ def registrar_usuario(user_id, username=None, first_name=None):
 
 
 def garantir_usuario(user_id, first_name=None, username=None):
-    """Função de compatibilidade exigida pelo main.py no comando /start."""
     return registrar_usuario(user_id, username=username, first_name=first_name)
 
 
@@ -278,161 +320,115 @@ def deletar_produto(produto_id):
     conn.close()
 
 
-def baixar_estoque(produto_id, qtd=1):
+def sincronizar_estoque(produto_id):
+    """Estoque do produto é o menor valor entre GGs disponíveis e Dados disponíveis."""
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute(
-        "UPDATE produtos SET estoque = MAX(0, estoque - ?) WHERE id = ?",
-        (qtd, produto_id),
-    )
+    ggs_livres = cur.execute("SELECT COUNT(*) AS c FROM estoque_ggs WHERE produto_id = ? AND vendido = 0", (produto_id,)).fetchone()["c"]
+    dados_livres = cur.execute("SELECT COUNT(*) AS c FROM estoque_dados WHERE produto_id = ? AND vendido = 0", (produto_id,)).fetchone()["c"]
+    
+    menor_estoque = min(ggs_livres, dados_livres)
+    cur.execute("UPDATE produtos SET estoque = ? WHERE id = ?", (menor_estoque, produto_id))
     conn.commit()
     conn.close()
+    return menor_estoque
 
 
 # =====================================================================
-# CARDS  (ADICIONAR / CONTAR / BUSCAR)
+# ESTOQUE SEPARADO (GGS / BINS E DADOS)
 # =====================================================================
-def adicionar_card(codigo, produto_id, senha=None, admin_id=None):
-    """Insere UM card. Retorna True se inseriu, False se já existia."""
-    codigo = (codigo or "").strip()
-    if not codigo:
-        return False
+def identificar_bandeira(bin_str):
+    b = str(bin_str).strip()
+    if b.startswith("4"):
+        return "Visa"
+    elif b.startswith(("51", "52", "53", "54", "55")) or (2221 <= int(b[:4]) <= 2720 if b[:4].isdigit() else False):
+        return "Mastercard"
+    elif b.startswith(("34", "37")):
+        return "Amex"
+    elif b.startswith("6011") or b.startswith("65") or (644 <= int(b[:3]) <= 649 if b[:3].isdigit() else False):
+        return "Discover"
+    elif b.startswith("36") or b.startswith("38") or b.startswith("30"):
+        return "Diners"
+    elif b.startswith("35"):
+        return "JCB"
+    else:
+        return "Desconhecida"
+
+
+def adicionar_ggs_lote(produto_id, bin_informada, texto_linhas):
+    """Adiciona GGs validando se cada linha corresponde à Bin informada (6 primeiros dígitos)."""
+    linhas = [l.strip() for l in (texto_linhas or "").splitlines() if l.strip()]
+    adicionados = 0
+    duplicados = 0
+    invalidos = 0
+
+    bin_limpa = "".join(filter(str.isdigit, str(bin_informada)))[:6]
+    bandeira = identificar_bandeira(bin_limpa)
 
     conn = get_conn()
     cur = conn.cursor()
-    try:
-        cur.execute(
-            """INSERT INTO cards (codigo, produto_id, senha, vendido,
-                                  adicionado_por, criado_em)
-               VALUES (?, ?, ?, 0, ?, ?)""",
-            (codigo, produto_id, senha, admin_id, _now()),
-        )
-        conn.commit()
-        return True
-    except sqlite3.IntegrityError:
-        return False
-    finally:
-        conn.close()
+
+    for linha in linhas:
+        numeros_linha = "".join(filter(str.isdigit, linha))
+        if not numeros_linha.startswith(bin_limpa):
+            invalidos += 1
+            continue
+
+        try:
+            cur.execute("""
+                INSERT INTO estoque_ggs (produto_id, bin, bandeira, conteudo, vendido, criado_em)
+                VALUES (?, ?, ?, ?, 0, ?)
+            """, (produto_id, bin_limpa, bandeira, linha, _now()))
+            adicionados += 1
+        except sqlite3.IntegrityError:
+            duplicados += 1
+
+    conn.commit()
+    conn.close()
+    sincronizar_estoque(produto_id)
+    return adicionados, duplicados, invalidos
 
 
-def adicionar_cards_em_lote(texto, produto_id, admin_id=None):
-    """
-    Recebe um texto com vários cards, um por linha.
-    Formatos aceitos:
-        CODE
-        CODE:SENHA
-        CODE - SENHA
-    Retorna (adicionados, duplicados).
-    """
-    linhas = [l.strip() for l in (texto or "").splitlines() if l.strip()]
+def adicionar_dados_lote(produto_id, texto_linhas):
+    """Adiciona CPFs/Nomes/Dados separadamente."""
+    linhas = [l.strip() for l in (texto_linhas or "").splitlines() if l.strip()]
     adicionados = 0
     duplicados = 0
 
+    conn = get_conn()
+    cur = conn.cursor()
+
     for linha in linhas:
-        if ":" in linha:
-            codigo, senha = linha.split(":", 1)
-        elif " - " in linha:
-            codigo, senha = linha.split(" - ", 1)
-        else:
-            codigo, senha = linha, None
-
-        codigo = codigo.strip()
-        senha = senha.strip() if senha else None
-        if not codigo:
+        if not linha:
             continue
-
-        if adicionar_card(codigo, produto_id, senha, admin_id):
-            sincronizar_estoque(produto_id)
+        try:
+            cur.execute("""
+                INSERT INTO estoque_dados (produto_id, conteudo, vendido, criado_em)
+                VALUES (?, ?, 0, ?)
+            """, (produto_id, linha, _now()))
             adicionados += 1
-        else:
+        except sqlite3.IntegrityError:
             duplicados += 1
 
+    conn.commit()
+    conn.close()
+    sincronizar_estoque(produto_id)
     return adicionados, duplicados
 
 
-def sincronizar_estoque(produto_id):
-    """Estoque = quantidade de cards NÃO vendidos daquele produto."""
+def contar_estoque_separado(produto_id):
     conn = get_conn()
     cur = conn.cursor()
-    livres = cur.execute(
-        "SELECT COUNT(*) AS c FROM cards WHERE produto_id = ? AND vendido = 0",
-        (produto_id,),
-    ).fetchone()["c"]
-    cur.execute("UPDATE produtos SET estoque = ? WHERE id = ?", (livres, produto_id))
-    conn.commit()
+    ggs = cur.execute("SELECT COUNT(*) AS c FROM estoque_ggs WHERE produto_id = ? AND vendido = 0", (produto_id,)).fetchone()["c"]
+    dados = cur.execute("SELECT COUNT(*) AS c FROM estoque_dados WHERE produto_id = ? AND vendido = 0", (produto_id,)).fetchone()["c"]
     conn.close()
-    return livres
-
-
-def cards_livres(produto_id):
-    conn = get_conn()
-    cur = conn.cursor()
-    rows = cur.execute(
-        "SELECT * FROM cards WHERE produto_id = ? AND vendido = 0 ORDER BY id ASC LIMIT 50",
-        (produto_id,),
-    ).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
-
-
-def contar_cards_livres(produto_id):
-    conn = get_conn()
-    cur = conn.cursor()
-    c = cur.execute(
-        "SELECT COUNT(*) AS c FROM cards WHERE produto_id = ? AND vendido = 0",
-        (produto_id,),
-    ).fetchone()["c"]
-    conn.close()
-    return c
-
-
-def listar_cards(produto_id=None, apenas_livres=True, limite=50):
-    conn = get_conn()
-    cur = conn.cursor()
-    sql = "SELECT * FROM cards WHERE 1=1"
-    params = []
-    if produto_id is not None:
-        sql += " AND produto_id = ?"
-        params.append(produto_id)
-    if apenas_livres:
-        sql += " AND vendido = 0"
-    sql += " ORDER BY id DESC LIMIT ?"
-    params.append(limite)
-    rows = cur.execute(sql, params).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
-
-
-def deletar_card(card_id):
-    conn = get_conn()
-    cur = conn.cursor()
-    row = cur.execute("SELECT produto_id FROM cards WHERE id = ?", (card_id,)).fetchone()
-    if row:
-        cur.execute("DELETE FROM cards WHERE id = ?", (card_id,))
-        conn.commit()
-        pid = row["produto_id"]
-        conn.close()
-        if pid:
-            sincronizar_estoque(pid)
-        return True
-    conn.close()
-    return False
+    return ggs, dados
 
 
 # =====================================================================
-# VENDAS / COMPRA
+# VENDAS / COMPRA DE ITENS CASADOS
 # =====================================================================
 def realizar_compra_item_casado(user_id, produto_id, quantidade=1, metodo="saldo"):
-    """
-    Compra 1:N (N cards do MESMO produto).
-
-    IMPORTANTE: esta função agora devolve um DICT:
-        {"status": "ok",          "saldo": 12.5, "cards": [...], "total": 5.0}
-        {"status": "sem_saldo",   "saldo": 1.0,  "faltam": 4.0}
-        {"status": "sem_estoque", "livres": 0}
-        {"status": "erro",        "msg": "..."}
-    Use sempre res["status"] para decidir.
-    """
     produto = get_produto(produto_id)
     if not produto:
         return {"status": "erro", "msg": "Produto não encontrado."}
@@ -443,9 +439,9 @@ def realizar_compra_item_casado(user_id, produto_id, quantidade=1, metodo="saldo
 
     total = round(float(produto["preco"]) * int(quantidade), 2)
 
-    livres = cards_livres(produto_id)
-    if len(livres) < quantidade:
-        return {"status": "sem_estoque", "livres": len(livres)}
+    ggs_livres, dados_livres = contar_estoque_separado(produto_id)
+    if ggs_livres < quantidade or dados_livres < quantidade:
+        return {"status": "sem_estoque", "ggs": ggs_livres, "dados": dados_livres}
 
     if metodo == "saldo" and float(usuario["saldo"]) < total:
         return {
@@ -457,25 +453,49 @@ def realizar_compra_item_casado(user_id, produto_id, quantidade=1, metodo="saldo
     conn = get_conn()
     cur = conn.cursor()
     try:
-        codigos = []
-        for card in livres[:quantidade]:
-            cur.execute(
-                "UPDATE cards SET vendido = 1, comprador_id = ?, comprado_em = ? WHERE id = ? AND vendido = 0",
-                (user_id, _now(), card["id"]),
-            )
-            if cur.rowcount:
-                codigos.append(card)
+        # Pega N GGs livres
+        ggs_selecionadas = cur.execute(
+            "SELECT * FROM estoque_ggs WHERE produto_id = ? AND vendido = 0 ORDER BY id ASC LIMIT ?",
+            (produto_id, quantidade)
+        ).fetchall()
 
-        if len(codigos) < quantidade:
+        # Pega N Dados livres
+        dados_selecionados = cur.execute(
+            "SELECT * FROM estoque_dados WHERE produto_id = ? AND vendido = 0 ORDER BY id ASC LIMIT ?",
+            (produto_id, quantidade)
+        ).fetchall()
+
+        if len(ggs_selecionadas) < quantidade or len(dados_selecionados) < quantidade:
             conn.rollback()
             conn.close()
-            return {"status": "sem_estoque", "livres": 0}
+            return {"status": "sem_estoque"}
+
+        itens_entregues = []
+        for i in range(quantidade):
+            gg = ggs_selecionadas[i]
+            dado = dados_selecionados[i]
+
+            # Marca GG como vendida e remove
+            cur.execute(
+                "UPDATE estoque_ggs SET vendido = 1, comprador_id = ?, comprado_em = ? WHERE id = ?",
+                (user_id, _now(), gg["id"])
+            )
+            # Marca Dado como vendido e remove
+            cur.execute(
+                "UPDATE estoque_dados SET vendido = 1, comprador_id = ?, comprado_em = ? WHERE id = ?",
+                (user_id, _now(), dado["id"])
+            )
+
+            casado_texto = f"💳 GG: {gg['conteudo']} (Bin: {gg['bin']} - {gg['bandeira']})\n👤 Dados: {dado['conteudo']}"
+            itens_entregues.append(casado_texto)
 
         if metodo == "saldo":
             cur.execute(
                 "UPDATE users SET saldo = saldo - ? WHERE user_id = ?",
                 (total, user_id),
             )
+
+        texto_venda_final = "\n\n--------------------\n\n".join(itens_entregues)
 
         cur.execute(
             """INSERT INTO vendas
@@ -489,38 +509,23 @@ def realizar_compra_item_casado(user_id, produto_id, quantidade=1, metodo="saldo
                 quantidade,
                 total,
                 metodo,
-                "\n".join([c["codigo"] for c in codigos]),
+                texto_venda_final,
                 _now(),
             ),
         )
         conn.commit()
 
-        cur.execute("UPDATE produtos SET estoque = MAX(0, estoque - ?) WHERE id = ?", (quantidade, produto_id))
-        conn.commit()
+        sincronizar_estoque(produto_id)
 
         saldo = cur.execute("SELECT saldo FROM users WHERE user_id = ?", (user_id,)).fetchone()["saldo"]
         conn.close()
 
-        return {"status": "ok", "saldo": float(saldo), "cards": codigos, "total": total}
+        return {"status": "ok", "saldo": float(saldo), "cards_entregues": itens_entregues, "total": total}
 
     except Exception as e:
         conn.rollback()
         conn.close()
         return {"status": "erro", "msg": str(e)}
-
-
-def registrar_venda(user_id, produto_id, nome_produto, qtd, valor, metodo, cards_txt):
-    conn = get_conn()
-    cur = conn.cursor()
-    cur.execute(
-        """INSERT INTO vendas
-           (comprador_id, produto_id, nome_produto, quantidade,
-            valor_total, metodo, cards, criado_em)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-        (user_id, produto_id, nome_produto, qtd, valor, metodo, cards_txt, _now()),
-    )
-    conn.commit()
-    conn.close()
 
 
 def historico_vendas(user_id=None, limite=50):
@@ -611,8 +616,8 @@ def estatisticas():
     stats = {
         "usuarios": cur.execute("SELECT COUNT(*) c FROM users").fetchone()["c"],
         "produtos": cur.execute("SELECT COUNT(*) c FROM produtos WHERE ativo = 1").fetchone()["c"],
-        "cards_livres": cur.execute("SELECT COUNT(*) c FROM cards WHERE vendido = 0").fetchone()["c"],
-        "cards_vendidos": cur.execute("SELECT COUNT(*) c FROM cards WHERE vendido = 1").fetchone()["c"],
+        "ggs_livres": cur.execute("SELECT COUNT(*) c FROM estoque_ggs WHERE vendido = 0").fetchone()["c"],
+        "dados_livres": cur.execute("SELECT COUNT(*) c FROM estoque_dados WHERE vendido = 0").fetchone()["c"],
         "vendas": cur.execute("SELECT COUNT(*) c FROM vendas").fetchone()["c"],
         "faturamento": cur.execute("SELECT COALESCE(SUM(valor_total),0) v FROM vendas").fetchone()["v"],
     }
@@ -631,7 +636,8 @@ def log_admin(admin_id, acao, detalhe=""):
     conn.close()
 
 
-# --- apelidos de compatibilidade (não remova) ---
+# --- apelidos de compatibilidade ---
 criar_tabelas = init_db
 
 init_db()
+
