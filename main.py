@@ -3,8 +3,7 @@ import re
 import time
 import uuid
 import logging
-import threading
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import requests
 import telebot
@@ -21,7 +20,7 @@ logging.basicConfig(
 )
 LOG = logging.getLogger("DonGhostBot")
 
-bot = telebot.TeleBot(config.TOKEN, threaded=True)
+bot = telebot.TeleBot(config.TOKEN, threaded=False)
 
 MP_ACCESS_TOKEN = os.getenv(
     "MP_ACCESS_TOKEN",
@@ -31,7 +30,7 @@ sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
 
 SUPORTE_TG = "https://t.me/JENNE_BOT_SUPORTE"
 SUPORTE_WA = "https://wa.me/639272951705"
-PRECO_MINIMO_PIX = float(os.getenv("PRECO_MINIMO_PIX", "10.0"))
+PRECO_MINIMO_PIX = float(os.getenv("PRECO_MINIMO_PIX", "5.0"))
 
 ADMIN_ABASTECENDO = {}
 app = Flask(__name__)
@@ -85,6 +84,7 @@ def obter_saldo_usuario(user_id):
 def enviar_menu(chat_id, user_id):
     db.garantir_usuario(user_id, "", "")
     saldo = obter_saldo_usuario(user_id)
+    
     texto = (
         "💎 **BEM-VINDO AO BOT DON GG • PREMIUM SHOP** 💎\n"
         "───────────────────────────────\n"
@@ -93,6 +93,7 @@ def enviar_menu(chat_id, user_id):
         "───────────────────────────────\n"
         "🔥 *As melhores GG'S do mercado, GGs de alta qualidade e aprovação expressa.*"
     )
+    
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
         types.InlineKeyboardButton("💳 Comprar GGs", callback_data="menu_gg"),
@@ -102,42 +103,76 @@ def enviar_menu(chat_id, user_id):
         types.InlineKeyboardButton("🎁 Resgatar Gift", callback_data="info_gift"),
         types.InlineKeyboardButton("📞 Suporte", callback_data="suporte"),
     )
-    banner = db.get_config("banner_file_id") if hasattr(db, "get_config") else None
-    if banner:
-        try:
-            bot.send_photo(chat_id, photo=banner, caption=texto,
-                           reply_markup=markup, parse_mode="Markdown")
-            return
-        except Exception as e:
-            LOG.warning("Banner indisponivel, usando texto: %s", e)
+    
+    if eh_admin(user_id):
+        markup.add(types.InlineKeyboardButton("👑 Painel Admin (Comandos)", callback_data="painel_admin"))
+
     bot.send_message(chat_id, texto, reply_markup=markup, parse_mode="Markdown")
 
 
 # --------------------------------------------------------------------------
-# COMANDOS
+# COMANDOS DE ADMIN E GERAIS
 # --------------------------------------------------------------------------
 @bot.message_handler(commands=["start"])
 def cmd_start(message):
     user_id = message.from_user.id
-    db.garantir_usuario(user_id, message.from_user.first_name or "Cliente",
-                        message.from_user.username or "")
+    db.garantir_usuario(user_id, message.from_user.first_name or "Cliente", message.from_user.username or "")
     enviar_menu(message.chat.id, user_id)
 
 
-@bot.message_handler(commands=["ajuda", "help"])
-def cmd_ajuda(message):
+@bot.message_handler(commands=["admin", "painel"])
+def cmd_painel(message):
+    if not eh_admin(message.from_user.id):
+        return
     bot.reply_to(message,
-                 "🤖 **COMANDOS**\n\n"
-                 "/start — Menu principal\n"
-                 "/pix 20 — Gerar cobrança Pix\n"
-                 "/resgatar GIFT-XXXX — Resgatar saldo\n\n"
-                 "👑 **Admin**\n"
-                 "/abastecer [ID/Nome] — Cadastrar cards\n"
-                 "/set_preco [ID] [valor] — Preço do produto\n"
-                 "/gerar_gift [qtd] [valor] — Criar gifts\n"
-                 "/estoque — Resumo do estoque\n"
-                 "/limpar_estoque — Remover vendidos",
+                 "👑 **PAINEL DE CONTROLE - ADMIN**\n\n"
+                 "📦 **Produtos & Estoque:**\n"
+                 "• `/novo_produto [Nome] | [Preço]` — Cria um produto\n"
+                 "• `/estoque` — Vê o resumo do estoque\n"
+                 "• `/abastecer [ID]` — Adiciona cards/GGs\n"
+                 "• `/set_preco [ID] [Valor]` — Altera preço\n"
+                 "• `/limpar_estoque` — Remove vendidos\n\n"
+                 "💵 **Financeiro & Gifts:**\n"
+                 "• `/gerar_gift [Qtd] [Valor]` — Cria gift cards\n"
+                 "• `/dar_saldo [ID] [Valor]` — Adiciona saldo",
                  parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["novo_produto"])
+def cmd_novo_produto(message):
+    if not eh_admin(message.from_user.id):
+        return
+    txt = message.text.replace("/novo_produto", "").strip()
+    if "|" not in txt:
+        bot.reply_to(message, "⚠️ Use o formato:\n`/novo_produto Nome do Produto | 15.00`", parse_mode="Markdown")
+        return
+    partes = txt.split("|")
+    nome = partes[0].strip()
+    try:
+        preco = float(partes[1].strip().replace(",", "."))
+    except ValueError:
+        bot.reply_to(message, "❌ Preço inválido. Use números ex: `15.00`", parse_mode="Markdown")
+        return
+    
+    pid = db.adicionar_produto(nome, preco, descricao="", estoque=0)
+    bot.reply_to(message, f"✅ Produto criado!\n\n🏷️ Nome: `{nome}`\n🆔 ID: `{pid}`\n💵 Preço: `R$ {preco:.2f}`\n\nUse `/abastecer {pid}` para colocar os cards.", parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["dar_saldo"])
+def cmd_dar_saldo(message):
+    if not eh_admin(message.from_user.id):
+        return
+    args = (message.text or "").split()
+    if len(args) < 3:
+        bot.reply_to(message, "⚠️ Use: `/dar_saldo [user_id] [valor]`", parse_mode="Markdown")
+        return
+    try:
+        uid = int(args[1])
+        val = float(args[2].replace(",", "."))
+        db.atualizar_saldo(uid, val)
+        bot.reply_to(message, f"✅ Adicionado R$ {val:.2f} para o usuário `{uid}`.", parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Erro: {e}")
 
 
 @bot.message_handler(commands=["estoque"])
@@ -153,7 +188,7 @@ def cmd_estoque(message):
     for p in produtos:
         q = db.contar_cards_livres(p["id"])
         total += q
-        linhas.append(f"• `{p['nome']}` (ID: {p['id']}) → {q} disp. | R$ {p['preco']:.2f}")
+        linhas.append(f"• `{p['nome']}` (ID: `{p['id']}`) → **{q}** disp. | R$ {p['preco']:.2f}")
     linhas.append(f"\n**TOTAL DE CARDS:** {total}")
     bot.reply_to(message, "\n".join(linhas), parse_mode="Markdown")
 
@@ -161,65 +196,39 @@ def cmd_estoque(message):
 @bot.message_handler(commands=["abastecer"])
 def cmd_abastecer(message):
     if not eh_admin(message.from_user.id):
-        bot.reply_to(message, "🔒 Comando exclusivo do admin.")
         return
-
     texto = message.text or ""
-    partes = [p for p in texto.splitlines()]
-    tokens = partes[0].split()
-
+    tokens = texto.split()
     if len(tokens) < 2:
-        bot.reply_to(message,
-                     "⚠️ Use assim:\n`/abastecer [ID_PRODUTO]`\ne cole os cards na **próxima** mensagem.",
-                     parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Use assim:\n`/abastecer [ID_PRODUTO]`\ne envie os cards na mensagem seguinte.", parse_mode="Markdown")
         return
-
     try:
         produto_id = int(tokens[1])
     except ValueError:
-        bot.reply_to(message, "❌ ID do produto inválido. Use um número ex: `/abastecer 1`", parse_mode="Markdown")
+        bot.reply_to(message, "❌ ID inválido.")
         return
-
+    
     prod = db.get_produto(produto_id)
     if not prod:
-        bot.reply_to(message, f"❌ Produto com ID `{produto_id}` não encontrado. Cadastre o produto primeiro.", parse_mode="Markdown")
-        return
-
-    restantes = [l.strip() for l in partes[1:] if l.strip()]
-    if restantes:
-        adicionados, duplicados = db.adicionar_cards_em_lote("\n".join(restantes), produto_id, message.from_user.id)
-        bot.reply_to(message,
-                     f"✅ Adicionados **{adicionados}** cards ao produto `{prod['nome']}`.\n⚠️ Duplicados: {duplicados}",
-                     parse_mode="Markdown")
+        bot.reply_to(message, f"❌ Produto ID `{produto_id}` não encontrado.")
         return
 
     ADMIN_ABASTECENDO[message.from_user.id] = produto_id
-    bot.reply_to(message,
-                 f"📥 Produto `{prod['nome']}` (ID: {produto_id}) selecionado.\n\n"
-                 f"Agora cole as linhas dos cards na **próxima mensagem**, uma por linha.",
-                 parse_mode="Markdown")
+    bot.reply_to(message, f"📥 Produto selecionado: `{prod['nome']}` (ID: {produto_id}).\n\nAgora **envie os cards (um por linha)** nesta conversa.", parse_mode="Markdown")
 
 
-@bot.message_handler(func=lambda m: (
-        m.text is not None
-        and not m.text.startswith("/")
-        and eh_admin(m.from_user.id)
-        and m.from_user.id in ADMIN_ABASTECENDO))
+@bot.message_handler(func=lambda m: m.text and not m.text.startswith("/") and eh_admin(m.from_user.id) and m.from_user.id in ADMIN_ABASTECENDO)
 def capturar_linhas_abastecimento(message):
     produto_id = ADMIN_ABASTECENDO.pop(message.from_user.id, None)
     if not produto_id:
         return
-    linhas = [l.strip() for l in (message.text or "").splitlines() if l.strip()]
+    linhas = [l.strip() for l in message.text.splitlines() if l.strip()]
     if not linhas:
-        bot.reply_to(message, "⚠️ Mensagem vazia. Abastecimento cancelado.")
+        bot.reply_to(message, "⚠️ Nenhuma linha detectada.")
         return
     adicionados, duplicados = db.adicionar_cards_em_lote("\n".join(linhas), produto_id, message.from_user.id)
-    prod = db.get_produto(produto_id)
-    nome_prod = prod['nome'] if prod else str(produto_id)
-    bot.reply_to(message,
-                 f"✅ **{adicionados}** cards salvos no produto `{nome_prod}`.\n"
-                 f"⚠️ Ignorados/Duplicados: {duplicados}",
-                 parse_mode="Markdown")
+    db.sincronizar_estoque(produto_id)
+    bot.reply_to(message, f"✅ Sucesso!\n• Adicionados: **{adicionados}**\n• Duplicados/Ignorados: {duplicados}", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["set_preco"])
@@ -228,17 +237,16 @@ def cmd_set_preco(message):
         return
     args = (message.text or "").split()
     if len(args) < 3:
-        bot.reply_to(message, "⚠️ Use: `/set_preco [id_produto] [valor]`", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Use: `/set_preco [id] [valor]`")
         return
     try:
-        pid = int(args[1])
-        valor = float(args[2].replace(",", "."))
+        pid, valor = int(args[1]), float(args[2].replace(",", "."))
         prod = db.get_produto(pid)
         if not prod:
             bot.reply_to(message, "❌ Produto não encontrado.")
             return
         db.adicionar_produto(prod["nome"], valor, prod["descricao"], prod["estoque"], prod["imagem"], produto_id=pid)
-        bot.reply_to(message, f"✅ Produto `{prod['nome']}` atualizado para `R$ {valor:.2f}`", parse_mode="Markdown")
+        bot.reply_to(message, f"✅ Preço alterado para R$ {valor:.2f}")
     except Exception as e:
         bot.reply_to(message, f"❌ Erro: {e}")
 
@@ -249,7 +257,7 @@ def cmd_gerar_gift(message):
         return
     args = (message.text or "").split()
     if len(args) < 3:
-        bot.reply_to(message, "⚠️ Use: `/gerar_gift [quantidade] [valor]`", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Use: `/gerar_gift [quantidade] [valor]`")
         return
     try:
         qtd, valor = int(args[1]), float(args[2].replace(",", "."))
@@ -258,9 +266,7 @@ def cmd_gerar_gift(message):
             codigo = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
             db.adicionar_card(codigo, None, senha=str(valor), admin_id=message.from_user.id)
             codigos.append(codigo)
-        bot.reply_to(message,
-                     f"🎁 **{qtd} gifts de R$ {valor:.2f} gerados!**\n\n" + "\n".join(f"`{c}`" for c in codigos),
-                     parse_mode="Markdown")
+        bot.reply_to(message, f"🎁 **{qtd} Gifts gerados de R$ {valor:.2f}:**\n\n" + "\n".join(f"`{c}`" for c in codigos), parse_mode="Markdown")
     except Exception as e:
         bot.reply_to(message, f"❌ Erro: {e}")
 
@@ -269,7 +275,7 @@ def cmd_gerar_gift(message):
 def cmd_resgatar(message):
     args = (message.text or "").split()
     if len(args) < 2:
-        bot.reply_to(message, "⚠️ Use: `/resgatar GIFT-XXXXXXXX`", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Use: `/resgatar GIFT-XXXXXXXX`")
         return
     codigo = args[1].strip().upper()
     conn = db.get_conn()
@@ -286,38 +292,39 @@ def cmd_resgatar(message):
 
     db.atualizar_saldo(message.from_user.id, valor)
     novo_saldo = obter_saldo_usuario(message.from_user.id)
-    bot.reply_to(message,
-                 f"✅ **Gift resgatado com sucesso!**\n\n💵 Adicionado: `R$ {valor:.2f}`\n"
-                 f"💰 Saldo atual: `R$ {novo_saldo:.2f}`",
-                 parse_mode="Markdown")
+    bot.reply_to(message, f"✅ **Gift resgatado!**\n\n💵 Adicionado: `R$ {valor:.2f}`\n💰 Saldo atual: `R$ {novo_saldo:.2f}`", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["pix"])
 def cmd_pix(message):
     args = (message.text or "").split()
     if len(args) < 2:
-        bot.reply_to(message, "⚠️ Informe o valor.\nExemplo: `/pix 20`", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Informe o valor. Exemplo: `/pix 15`")
         return
     try:
         valor = float(args[1].replace(",", "."))
     except ValueError:
-        bot.reply_to(message, "❌ Valor inválido. Exemplo: `/pix 20`")
+        bot.reply_to(message, "❌ Valor inválido.")
         return
     if valor < PRECO_MINIMO_PIX:
         bot.reply_to(message, f"⚠️ Valor mínimo para Pix: R$ {PRECO_MINIMO_PIX:.2f}")
         return
-    link = gerar_link_pix(message.from_user.id, valor)
-    if not link:
-        bot.reply_to(message, "❌ Falha ao gerar o link no Mercado Pago. Tente novamente.")
+    
+    res_pix = gerar_pix_copia_e_cola(message.from_user.id, valor)
+    if not res_pix:
+        bot.reply_to(message, "❌ Erro ao gerar o Pix automático. Tente novamente mais tarde.")
         return
+    
+    copia_cola = res_pix["qr_code"]
     markup = types.InlineKeyboardMarkup(row_width=1)
-    markup.add(
-        types.InlineKeyboardButton("🔗 Pagar com Pix (Mercado Pago)", url=link),
-        types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"),
-    )
+    markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
+    
     bot.reply_to(message,
-                 f"💳 **LINK PIX GERADO!**\n\n💵 Valor: `R$ {valor:.2f}`\n\n"
-                 f"Toque no botão para abrir o checkout. O saldo cai automaticamente após a aprovação.",
+                 f"💳 **PIX COPIA E COLA GERADO**\n\n"
+                 f"💵 Valor: `R$ {valor:.2f}`\n\n"
+                 f"Copie o código abaixo e pague no app do seu banco:\n\n"
+                 f"`{copia_cola}`\n\n"
+                 f"⏱️ *O saldo cai automaticamente após a aprovação.*",
                  reply_markup=markup, parse_mode="Markdown")
 
 
@@ -331,49 +338,63 @@ def cmd_limpar_estoque(message):
     removidos = cur.rowcount
     conn.commit()
     conn.close()
-    bot.reply_to(message, f"🧹 {removidos} item(ns) vendido(s) removido(s) do estoque.")
-
-
-@bot.message_handler(content_types=["photo"])
-def capturar_novo_banner(message):
-    if not eh_admin(message.from_user.id):
-        return
-    caption = message.caption or ""
-    if "/mudar_banner" not in caption:
-        return
-    if hasattr(db, "set_config"):
-        db.set_config("banner_file_id", message.photo[-1].file_id)
-        bot.reply_to(message, "✅ **Banner atualizado!**", parse_mode="Markdown")
+    bot.reply_to(message, f"🧹 {removidos} cards vendidos limpos do banco.")
 
 
 # --------------------------------------------------------------------------
-# MERCADO PAGO
+# WEBHOOK FLASK ROUTES (QUADRANT / SQUAREDCLOUD)
 # --------------------------------------------------------------------------
-def gerar_link_pix(user_id, valor):
+def gerar_pix_copia_e_cola(user_id, valor):
     try:
-        pref = {
-            "items": [{
-                "title": f"Recarga de Saldo - ID {user_id}",
-                "quantity": 1,
-                "unit_price": float(valor),
-                "currency_id": "BRL",
-            }],
-            "external_reference": f"recarga_{user_id}_{int(time.time())}",
-            "payment_methods": {
-                "excluded_payment_types": [{"id": "credit_card"}, {"id": "ticket"}],
-                "installments": 1,
-            },
+        url = "https://api.mercadopago.com/v1/payments"
+        headers = {
+            "Authorization": f"Bearer {MP_ACCESS_TOKEN}",
+            "Content-Type": "application/json",
+            "X-Idempotency-Key": str(uuid.uuid4())
         }
-        resp = sdk.preference().create(pref)
-        return resp["response"].get("init_point")
+        payload = {
+            "transaction_amount": float(valor),
+            "description": f"Recarga de Saldo - ID {user_id}",
+            "payment_method_id": "pix",
+            "payer": {
+                "email": f"cliente_{user_id}@onghost.com",
+                "first_name": "Cliente",
+                "last_name": "Bot"
+            },
+            "external_reference": f"recarga_{user_id}_{int(time.time())}"
+        }
+        resp = requests.post(url, json=payload, headers=headers, timeout=15)
+        if resp.status_code in (200, 201):
+            data = resp.json()
+            point_of_interaction = data.get("point_of_interaction", {})
+            transaction_data = point_of_interaction.get("transaction_data", {})
+            return {
+                "id": data.get("id"),
+                "qr_code": transaction_data.get("qr_code"),
+                "qr_code_base64": transaction_data.get("qr_code_base64")
+            }
+        else:
+            LOG.error("Erro MP Pix Copia e Cola: %s", resp.text)
+            return None
     except Exception as e:
-        LOG.error("Mercado Pago preference: %s", e)
+        LOG.error("Exceção Pix Copia e Cola: %s", e)
         return None
 
 
 @app.route("/")
 def home():
-    return "DonGhostBot rodando perfeitamente!"
+    return "DonGhostBot Webhook rodando perfeitamente!"
+
+
+@app.route(f"/{config.TOKEN}", methods=["POST"])
+def webhook_telegram():
+    if request.headers.get("content-type") == "application/json":
+        json_string = request.get_data().decode("utf-8")
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return "", 200
+    else:
+        return "Forbidden", 403
 
 
 @app.route("/webhook/mercadopago", methods=["POST", "GET"])
@@ -417,25 +438,21 @@ def webhook_mercadopago():
         try:
             bot.send_message(
                 user_id,
-                f"✅ **Pagamento aprovado via Mercado Pago!**\n\n"
+                f"✅ **Pagamento aprovado via Pix!**\n\n"
                 f"💵 Recarga de R$ {valor_pago:.2f} creditada.\n"
                 f"💰 **Saldo atual:** `R$ {novo:.2f}`",
                 reply_markup=markup, parse_mode="Markdown",
             )
         except Exception as e:
-            LOG.error("Aviso de recarga nao entregue a %s: %s", user_id, e)
+            LOG.error("Aviso de recarga não entregue a %s: %s", user_id, e)
         return jsonify({"status": "success"}), 200
     except Exception as e:
         LOG.error("Webhook MP: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-def run_web_server():
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", config.PORT)))
-
-
 # --------------------------------------------------------------------------
-# CALLBACKS
+# CALLBACKS DO BOT
 # --------------------------------------------------------------------------
 @bot.callback_query_handler(func=lambda c: c.data == "voltar_menu")
 def cb_voltar(call):
@@ -444,6 +461,25 @@ def cb_voltar(call):
     except Exception:
         pass
     enviar_menu(call.message.chat.id, call.from_user.id)
+
+
+@bot.callback_query_handler(func=lambda c: c.data == "painel_admin")
+def cb_painel_admin(call):
+    if not eh_admin(call.from_user.id):
+        responder(call, "Acesso negado.")
+        return
+    responder(call, None, alerta=False)
+    bot.send_message(call.message.chat.id,
+                     "👑 **PAINEL DE CONTROLE - ADMIN**\n\n"
+                     "📦 **Comandos rápidos:**\n"
+                     "• `/novo_produto [Nome] | [Preço]`\n"
+                     "• `/estoque`\n"
+                     "• `/abastecer [ID]`\n"
+                     "• `/set_preco [ID] [Valor]`\n"
+                     "• `/gerar_gift [Qtd] [Valor]`\n"
+                     "• `/dar_saldo [ID] [Valor]`\n"
+                     "• `/limpar_estoque`",
+                     parse_mode="Markdown")
 
 
 @bot.callback_query_handler(func=lambda c: c.data in ("perfil", "suporte", "info_gift", "historico_compras", "menu_recarga"))
@@ -469,7 +505,7 @@ def cb_estatico(call):
     elif data == "menu_recarga":
         responder(call, None, alerta=False)
         editar_ou_enviar(call,
-                         "💳 **FAZER RECARGA VIA PIX**\n\nEnvie o comando `/pix [valor]` no chat para gerar sua cobrança.\nExemplo: `/pix 20`",
+                         "💳 **FAZER RECARGA VIA PIX**\n\nEnvie o comando `/pix [valor]` no chat para gerar sua cobrança.\nExemplo: `/pix 15`",
                          types.InlineKeyboardMarkup(row_width=1).add(
                              types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu")))
 
@@ -499,15 +535,23 @@ def cb_menu_gg(call):
     responder(call, None, alerta=False)
     produtos = db.listar_produtos(apenas_ativos=True)
     if not produtos:
-        responder(call, "⚠️ Nenhum produto disponível em estoque no momento!")
+        responder(call, "⚠️ Nenhum produto disponível em estoque no momento!", alerta=True)
         return
+    
     markup = types.InlineKeyboardMarkup(row_width=1)
+    tem_disponivel = False
     for p in produtos:
         q = db.contar_cards_livres(p["id"])
         if q > 0:
+            tem_disponivel = True
             markup.add(types.InlineKeyboardButton(
                 f"🃏 {p['nome']} • {q} disp. • R$ {p['preco']:.2f}",
                 callback_data=f"comprar_prod::{p['id']}"))
+            
+    if not tem_disponivel:
+        responder(call, "⚠️ Todos os produtos estão com estoque zerado no momento!", alerta=True)
+        return
+
     markup.add(types.InlineKeyboardButton("🔙 Menu Principal", callback_data="voltar_menu"))
     editar_ou_enviar(call, "💳 **ESCOLHA O PRODUTO DESEJADO:**", markup)
 
@@ -523,19 +567,19 @@ def cb_comprar_prod(call):
     res = db.realizar_compra_item_casado(call.from_user.id, produto_id, quantidade=1, metodo="saldo")
 
     if res["status"] == "sem_saldo":
-        responder(call, f"❌ Saldo insuficiente.\nVocê tem R$ {res['saldo']:.2f} e faltam R$ {res['faltam']:.2f}.")
+        responder(call, f"❌ Saldo insuficiente.\nVocê tem R$ {res['saldo']:.2f} e faltam R$ {res['faltam']:.2f}.", alerta=True)
         return
     if res["status"] == "sem_estoque":
-        responder(call, "❌ Estoque esgotado para este produto.")
+        responder(call, "❌ Estoque esgotado para este produto.", alerta=True)
         return
     if res["status"] != "ok":
-        responder(call, f"❌ Erro: {res.get('msg', 'Desconhecido')}")
+        responder(call, f"❌ Erro: {res.get('msg', 'Desconhecido')}", alerta=True)
         return
 
     cards_str = "\n".join([c["codigo"] for c in res["cards"]])
     msg = (
         "✅ **COMPRA EFETUADA!** ✅\n\n"
-        f"🛍️ **Item(ns):**\n`{sanitizar(cards_str)}`\n\n"
+        f"🛍️ **Item(ns) adquirido(s):**\n`{sanitizar(cards_str)}`\n\n"
         f"💰 **Saldo restante:** `R$ {res['saldo']:.2f}`"
     )
     markup = types.InlineKeyboardMarkup(row_width=1)
@@ -552,18 +596,24 @@ def cb_comprar_prod(call):
 
 
 # --------------------------------------------------------------------------
-# BOOT
+# CONFIGURAÇÃO DE WEBHOOK AUTOMÁTICA AO INICIAR
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
-    threading.Thread(target=run_web_server, daemon=True).start()
-    try:
-        bot.remove_webhook()
-    except Exception:
-        pass
-    LOG.info("DonGhostBot subindo em polling. Admin: %s", config.ADMIN_ID)
-    while True:
+    # Pega a URL pública fornecida pela SquaredCloud (geralmente salva em variável de ambiente)
+    # Ou você pode substituir manualmente se sua URL for fixa (ex: https://seu-app.squaredcloud.app)
+    domain = os.getenv("SQUAREDCLOUD_DOMAIN") or os.getenv("DOMAIN") or os.getenv("RENDER_EXTERNAL_URL")
+    
+    if domain:
+        webhook_url = f"https://{domain.replace('https://', '').strip('/')}/{config.TOKEN}"
         try:
-            bot.infinity_polling(skip_pending=True, timeout=30, long_polling_timeout=30)
+            bot.remove_webhook()
+            time.sleep(1)
+            bot.set_webhook(url=webhook_url)
+            LOG.info("Webhook configurado com sucesso para: %s", webhook_url)
         except Exception as e:
-            LOG.error("Polling caiu: %s — reiniciando em 5s", e)
-            time.sleep(5)
+            LOG.error("Erro ao configurar webhook: %s", e)
+    else:
+        LOG.warning("Nenhum domínio detectado automaticamente. Certifique-se de configurar o webhook manualmente se necessário.")
+
+    port = int(os.environ.get("PORT", 8080))
+    app.run(host="0.0.0.0", port=port)
