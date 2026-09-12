@@ -142,6 +142,11 @@ def registrar_usuario(user_id, username=None, first_name=None):
         return False
 
 
+def garantir_usuario(user_id, first_name=None, username=None):
+    """Função de compatibilidade exigida pelo main.py no comando /start."""
+    return registrar_usuario(user_id, username=username, first_name=first_name)
+
+
 def get_usuario(user_id):
     conn = get_conn()
     cur = conn.cursor()
@@ -630,4 +635,3 @@ def log_admin(admin_id, acao, detalhe=""):
 criar_tabelas = init_db
 
 init_db()
-
