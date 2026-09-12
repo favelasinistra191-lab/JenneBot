@@ -6,9 +6,11 @@ DB_NAME = "bot_telegram.db"
 
 
 def get_conn():
-    conn = sqlite3.connect(DB_NAME)
+    # Adicionado timeout e WAL mode para evitar conflitos e o erro "database is locked"
+    conn = sqlite3.connect(DB_NAME, timeout=10.0)
     conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA journal_mode = WAL;")
+    conn.execute("PRAGMA foreign_keys = ON;")
     return conn
 
 
@@ -640,4 +642,3 @@ def log_admin(admin_id, acao, detalhe=""):
 criar_tabelas = init_db
 
 init_db()
-
