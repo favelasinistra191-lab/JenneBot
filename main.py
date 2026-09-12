@@ -30,11 +30,9 @@ MP_ACCESS_TOKEN = os.getenv(
 )
 sdk = mercadopago.SDK(MP_ACCESS_TOKEN)
 
-CANAL_OBRIGATORIO = os.getenv("CANAL_OBRIGATORIO", "https://t.me/+VNkIZojSrHs4NDJh")
-CANAL_PARA_API = CANAL_OBRIGATORIO.replace("https://t.me/+", "@").replace("https://t.me/", "@")
-PRECO_MINIMO_PIX = float(os.getenv("PRECO_MINIMO_PIX", "10.0"))
 SUPORTE_TG = "https://t.me/JENNE_BOT_SUPORTE"
 SUPORTE_WA = "https://wa.me/639272951705"
+PRECO_MINIMO_PIX = float(os.getenv("PRECO_MINIMO_PIX", "10.0"))
 
 ADMIN_ABASTECENDO = {}
 app = Flask(__name__)
@@ -87,12 +85,12 @@ def enviar_menu(chat_id, user_id):
     db.garantir_usuario(user_id, "", "")
     saldo = db.obter_saldo(user_id)
     texto = (
-        "💎 **BEM-VINDO AO BOT DON GHOST • PREMIUM SHOP** 💎\n"
+        "💎 **BEM-VINDO AO BOT DON GG • PREMIUM SHOP** 💎\n"
         "───────────────────────────────\n"
         f"👤 **ID de Acesso:** `{user_id}`\n"
         f"💰 **Saldo em Conta:** `R$ {saldo:.2f}`\n"
         "───────────────────────────────\n"
-        "🔥 *As melhores notícias do mercado, GGs de alta qualidade e aprovação expressa.*"
+        "🔥 *As melhores GG'S do mercado, GGs de alta qualidade e aprovação expressa.*"
     )
     markup = types.InlineKeyboardMarkup(row_width=2)
     markup.add(
@@ -114,20 +112,6 @@ def enviar_menu(chat_id, user_id):
     bot.send_message(chat_id, texto, reply_markup=markup, parse_mode="Markdown")
 
 
-def verificar_inscricao_canal(user_id):
-    if not CANAL_PARA_API or CANAL_PARA_API == "@+":
-        return True
-    try:
-        membro = bot.get_chat_member(CANAL_PARA_API, user_id)
-        return membro.status in ("member", "administrator", "creator")
-    except telebot.apihelper.ApiTelegramException as e:
-        # -1007 = usuario bloqueou/nao esta; outros erros nao trancam a loja
-        if e.error_code == 400 or "not found" in str(e).lower():
-            return False
-        LOG.warning("Falha ao consultar canal (%s), liberando acesso.", e)
-        return True
-
-
 # --------------------------------------------------------------------------
 # COMANDOS
 # --------------------------------------------------------------------------
@@ -136,16 +120,6 @@ def cmd_start(message):
     user_id = message.from_user.id
     db.garantir_usuario(user_id, message.from_user.first_name or "Cliente",
                         message.from_user.username or "")
-    if not verificar_inscricao_canal(user_id):
-        markup = types.InlineKeyboardMarkup(row_width=1)
-        markup.add(
-            types.InlineKeyboardButton("📢 Entrar no Canal Oficial", url=CANAL_OBRIGATORIO),
-            types.InlineKeyboardButton("🔄 Já Entrei / Verificar", callback_data="verificar_inscricao"),
-        )
-        bot.send_message(message.chat.id,
-                         "⚠️ **Acesso Restrito!**\n\nPara utilizar o bot, entre no canal oficial primeiro.",
-                         reply_markup=markup, parse_mode="Markdown")
-        return
     enviar_menu(message.chat.id, user_id)
 
 
@@ -203,7 +177,6 @@ def cmd_abastecer(message):
     digitos = "".join(filter(str.isdigit, tokens[1]))
     bin_alvo = digitos[:6] if len(digitos) >= 6 else tokens[1].upper()
 
-    # Linhas coladas na MESMA mensagem
     restantes = [l.strip() for l in partes[1:] if l.strip() and "|" in l]
     if restantes:
         aceitas, rejeitadas = db.adicionar_lote_estoque(restantes, categoria="gg", bin_code=bin_alvo)
@@ -477,21 +450,8 @@ def run_web_server():
 
 
 # --------------------------------------------------------------------------
-# CALLBACKS — um handler por grupo, sem func=lambda call: True
+# CALLBACKS
 # --------------------------------------------------------------------------
-@bot.callback_query_handler(func=lambda c: c.data == "verificar_inscricao")
-def cb_verificar(call):
-    if verificar_inscricao_canal(call.from_user.id):
-        responder(call, "✅ Verificado!")
-        try:
-            bot.delete_message(call.message.chat.id, call.message.message_id)
-        except Exception:
-            pass
-        enviar_menu(call.message.chat.id, call.from_user.id)
-    else:
-        responder(call, "⚠️ Você ainda não entrou no canal!")
-
-
 @bot.callback_query_handler(func=lambda c: c.data == "voltar_menu")
 def cb_voltar(call):
     try:
@@ -561,7 +521,7 @@ def cb_menu_gg(call):
 
 @bot.callback_query_handler(func=lambda c: bool(c.data) and c.data.startswith("comprar_gg::"))
 def cb_comprar_gg(call):
-    bin_escolhida = call.data.split("::", 1)[1]          # split com maxsplit: nao quebra
+    bin_escolhida = call.data.split("::", 1)[1]
     preco = db.obter_preco_bin(bin_escolhida)
     res = db.realizar_compra_item_casado(call.from_user.id, "gg", preco, bin_v=bin_escolhida)
 
