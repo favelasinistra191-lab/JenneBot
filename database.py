@@ -626,4 +626,8 @@ def log_admin(admin_id, acao, detalhe=""):
     conn.close()
 
 
+# --- apelidos de compatibilidade (não remova) ---
+criar_tabelas = init_db
+
 init_db()
+
