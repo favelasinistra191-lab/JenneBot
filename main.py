@@ -39,7 +39,7 @@ app = Flask(__name__)
 
 
 # --------------------------------------------------------------------------
-# Helpers
+# Helpers & DB Safety
 # --------------------------------------------------------------------------
 def eh_admin(user_id):
     return int(user_id) == int(config.ADMIN_ID)
@@ -165,7 +165,7 @@ def cmd_novo_produto(message):
         return
     
     pid = db.adicionar_produto(nome, preco, descricao="", estoque=0)
-    bot.reply_to(message, f"✅ Produto criado!\n\n🏷️ Nome: `{nome}`\n🆔 ID: `{pid}`\n💵 Preço: `R$ {preco:.2f}`\n\nUse `/abastecer_ggs {pid} [BIN]` e `/abastecer_dados {pid}` para abastecer.", parse_mode="Markdown")
+    bot.reply_to(message, f"✅ Produto criado!\n\n🏷️ Nome: `{nome}`\n🆔 ID: `{pid}`\n💵 Preço: `R$ {preco:.2f}`", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["dar_saldo"])
@@ -308,51 +308,67 @@ def cmd_gerar_gift(message):
         bot.reply_to(message, "⚠️ Use: `/gerar_gift [quantidade] [valor]`")
         return
     try:
-        qtd, valor = int(args[1]), float(args[2].replace(",", "."))
-        codigos = []
-        for _ in range(qtd):
-            codigo = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
-            db.adicionar_dados_lote(None, codigo) # ou adaptado p gift
-            # como gift usa cards antigos, podemos salvar em estoque_dados com produto_id=None
-            codigos.append(codigo)
-        # Ajuste direto via sql p gift se necessário
+        qtd = int(args[1])
+        valor = float(args[2].replace(",", "."))
+        
         conn = db.get_conn()
         cur = conn.cursor()
-        for c in codigos:
-            cur.execute("INSERT INTO estoque_dados (produto_id, conteudo, vendido, criado_em) VALUES (NULL, ?, 0, ?)", (c, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        cur.execute("PRAGMA journal_mode=WAL;")
+        
+        codigos = []
+        for _ in range(qtd):
+            # Garante código único sem conflito
+            codigo = f"GIFT-{valor:.2f}-{uuid.uuid4().hex[:6].upper()}"
+            codigos.append(codigo)
+            cur.execute(
+                "INSERT INTO estoque_dados (produto_id, conteudo, vendido, criado_em) VALUES (NULL, ?, 0, ?)",
+                (codigo, datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            )
         conn.commit()
         conn.close()
 
         bot.reply_to(message, f"🎁 **{qtd} Gifts gerados de R$ {valor:.2f}:**\n\n" + "\n".join(f"`{c}`" for c in codigos), parse_mode="Markdown")
     except Exception as e:
-        bot.reply_to(message, f"❌ Erro: {e}")
+        bot.reply_to(message, f"❌ Erro ao gerar gift: {e}")
 
 
 @bot.message_handler(commands=["resgatar"])
 def cmd_resgatar(message):
     args = (message.text or "").split()
     if len(args) < 2:
-        bot.reply_to(message, "⚠️ Use: `/resgatar GIFT-XXXXXXXX`")
+        bot.reply_to(message, "⚠️ Use: `/resgatar GIFT-XX.XX-XXXXXX`")
         return
     codigo = args[1].strip().upper()
-    conn = db.get_conn()
-    cur = conn.cursor()
-    card = cur.execute("SELECT * FROM estoque_dados WHERE conteudo = ? AND produto_id IS NULL AND vendido = 0", (codigo,)).fetchone()
-    if not card:
-        conn.close()
-        bot.reply_to(message, "❌ Código de gift inválido ou já resgatado.")
-        return
-    # Assumimos o valor guardado ou fixo se necessário, por simplicidade usamos o id ou geramos com valor fixo no texto
-    # Como o gift foi gerado, podemos extrair o valor ou pedir pro admin. Vamos ajustar para buscar o valor do gift via config ou extrair.
-    # Para manter simples e funcional:
-    valor = 10.0 # Valor padrão ou ajuste se preferir
-    cur.execute("UPDATE estoque_dados SET vendido = 1, comprador_id = ?, comprado_em = ? WHERE id = ?", (message.from_user.id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), card["id"]))
-    conn.commit()
-    conn.close()
+    try:
+        conn = db.get_conn()
+        cur = conn.cursor()
+        cur.execute("PRAGMA journal_mode=WAL;")
+        card = cur.execute("SELECT * FROM estoque_dados WHERE conteudo = ? AND produto_id IS NULL AND vendido = 0", (codigo,)).fetchone()
+        
+        if not card:
+            conn.close()
+            bot.reply_to(message, "❌ Código de gift inválido ou já resgatado.")
+            return
 
-    db.atualizar_saldo(message.from_user.id, valor)
-    novo_saldo = obter_saldo_usuario(message.from_user.id)
-    bot.reply_to(message, f"✅ **Gift resgatado!**\n\n💵 Adicionado: `R$ {valor:.2f}`\n💰 Saldo atual: `R$ {novo_saldo:.2f}`", parse_mode="Markdown")
+        # Extrai o valor do próprio código do gift (ex: GIFT-10.00-A1B2C3 -> 10.00)
+        partes = codigo.split("-")
+        valor = 10.0
+        if len(partes) >= 2:
+            try:
+                valor = float(partes[1])
+            except ValueError:
+                pass
+
+        cur.execute("UPDATE estoque_dados SET vendido = 1, comprador_id = ?, comprado_em = ? WHERE id = ?", 
+                    (message.from_user.id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), card["id"]))
+        conn.commit()
+        conn.close()
+
+        db.atualizar_saldo(message.from_user.id, valor)
+        novo_saldo = obter_saldo_usuario(message.from_user.id)
+        bot.reply_to(message, f"✅ **Gift resgatado com sucesso!**\n\n💵 Adicionado: `R$ {valor:.2f}`\n💰 Saldo atual: `R$ {novo_saldo:.2f}`", parse_mode="Markdown")
+    except Exception as e:
+        bot.reply_to(message, f"❌ Erro ao resgatar: {e}")
 
 
 @bot.message_handler(commands=["pix"])
@@ -448,8 +464,20 @@ def webhook_telegram():
 def webhook_mercadopago():
     try:
         dados = request.json or request.args.to_dict() or {}
-        payment_id = (dados.get("data", {}) or {}).get("id") if isinstance(dados.get("data"), dict) \
-            else dados.get("data") or dados.get("id")
+        LOG.info("Webhook MP recebido: %s", dados)
+        
+        # Suporta tanto o formato novo do MP quanto notificações diretas de ID
+        payment_id = None
+        if "data" in dados and isinstance(dados["data"], dict):
+            payment_id = dados["data"].get("id")
+        elif "id" in dados:
+            payment_id = dados.get("id")
+        
+        if not payment_id and request.args.get("id"):
+            payment_id = request.args.get("id")
+        elif not payment_id and request.args.get("data.id"):
+            payment_id = request.args.get("data.id")
+
         if not payment_id:
             return jsonify({"status": "ignored"}), 200
 
@@ -467,7 +495,8 @@ def webhook_mercadopago():
 
         ref = str(p.get("external_reference") or "")
         if "recarga_" not in ref:
-            return jsonify({"status": "ignored"}), 200
+            return jsonify({"status": "ignored_ref"}), 200
+            
         try:
             user_id = int(ref.split("_")[1])
         except (IndexError, ValueError):
@@ -477,6 +506,7 @@ def webhook_mercadopago():
         if valor_pago <= 0:
             return jsonify({"status": "zero"}), 200
 
+        # Atualiza saldo de forma segura
         db.atualizar_saldo(user_id, valor_pago)
         novo = obter_saldo_usuario(user_id)
 
@@ -486,15 +516,16 @@ def webhook_mercadopago():
             bot.send_message(
                 user_id,
                 f"✅ **Pagamento aprovado via Pix!**\n\n"
-                f"💵 Recarga de R$ {valor_pago:.2f} creditada.\n"
+                f"💵 Recarga de R$ {valor_pago:.2f} creditada com sucesso.\n"
                 f"💰 **Saldo atual:** `R$ {novo:.2f}`",
                 reply_markup=markup, parse_mode="Markdown",
             )
         except Exception as e:
             LOG.error("Aviso de recarga não entregue a %s: %s", user_id, e)
+            
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        LOG.error("Webhook MP: %s", e)
+        LOG.error("Webhook MP Erro: %s", e)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -560,7 +591,7 @@ def cb_estatico(call):
     elif data == "info_gift":
         responder(call, None, alerta=False)
         editar_ou_enviar(call,
-                         "🎁 Para resgatar saldo, envie:\n`/resgatar GIFT-XXXXXXXX`",
+                         "🎁 Para resgatar saldo, envie:\n`/resgatar GIFT-XX.XX-XXXXXX`",
                          types.InlineKeyboardMarkup(row_width=1).add(
                              types.InlineKeyboardButton("🔙 Voltar", callback_data="voltar_menu")))
 
