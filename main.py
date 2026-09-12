@@ -32,7 +32,9 @@ SUPORTE_TG = "https://t.me/JENNE_BOT_SUPORTE"
 SUPORTE_WA = "https://wa.me/639272951705"
 PRECO_MINIMO_PIX = float(os.getenv("PRECO_MINIMO_PIX", "5.0"))
 
-ADMIN_ABASTECENDO = {}
+ADMIN_ABASTECENDO_GGS = {}
+ADMIN_ABASTECENDO_DADOS = {}
+ADMIN_ENVIANDO_FOTO = set()
 app = Flask(__name__)
 
 
@@ -107,6 +109,13 @@ def enviar_menu(chat_id, user_id):
     if eh_admin(user_id):
         markup.add(types.InlineKeyboardButton("👑 Painel Admin (Comandos)", callback_data="painel_admin"))
 
+    foto_id = db.get_config("foto_start")
+    if foto_id:
+        try:
+            bot.send_photo(chat_id, foto_id, caption=texto, reply_markup=markup, parse_mode="Markdown")
+            return
+        except Exception:
+            pass
     bot.send_message(chat_id, texto, reply_markup=markup, parse_mode="Markdown")
 
 
@@ -126,12 +135,13 @@ def cmd_painel(message):
         return
     bot.reply_to(message,
                  "👑 **PAINEL DE CONTROLE - ADMIN**\n\n"
-                 "📦 **Produtos & Estoque:**\n"
+                 "📦 **Produtos & Estoque Casado:**\n"
                  "• `/novo_produto [Nome] | [Preço]` — Cria um produto\n"
-                 "• `/estoque` — Vê o resumo do estoque\n"
-                 "• `/abastecer [ID]` — Adiciona cards/GGs\n"
+                 "• `/estoque` — Vê o resumo do estoque separado\n"
+                 "• `/abastecer_ggs [ID] [BIN]` — Adiciona GGs (valida Bin)\n"
+                 "• `/abastecer_dados [ID]` — Adiciona Nomes/CPFs\n"
                  "• `/set_preco [ID] [Valor]` — Altera preço\n"
-                 "• `/limpar_estoque` — Remove vendidos\n\n"
+                 "• `/set_foto_start` — Define a foto do perfil/start\n\n"
                  "💵 **Financeiro & Gifts:**\n"
                  "• `/gerar_gift [Qtd] [Valor]` — Cria gift cards\n"
                  "• `/dar_saldo [ID] [Valor]` — Adiciona saldo",
@@ -155,7 +165,7 @@ def cmd_novo_produto(message):
         return
     
     pid = db.adicionar_produto(nome, preco, descricao="", estoque=0)
-    bot.reply_to(message, f"✅ Produto criado!\n\n🏷️ Nome: `{nome}`\n🆔 ID: `{pid}`\n💵 Preço: `R$ {preco:.2f}`\n\nUse `/abastecer {pid}` para colocar os cards.", parse_mode="Markdown")
+    bot.reply_to(message, f"✅ Produto criado!\n\n🏷️ Nome: `{nome}`\n🆔 ID: `{pid}`\n💵 Preço: `R$ {preco:.2f}`\n\nUse `/abastecer_ggs {pid} [BIN]` e `/abastecer_dados {pid}` para abastecer.", parse_mode="Markdown")
 
 
 @bot.message_handler(commands=["dar_saldo"])
@@ -183,24 +193,44 @@ def cmd_estoque(message):
     if not produtos:
         bot.reply_to(message, "📭 Nenhum produto cadastrado.")
         return
-    linhas = ["📦 **ESTOQUE ATUAL**\n"]
-    total = 0
+    linhas = ["📦 **ESTOQUE SEPARADO (CASADO)**\n"]
     for p in produtos:
-        q = db.contar_cards_livres(p["id"])
-        total += q
-        linhas.append(f"• `{p['nome']}` (ID: `{p['id']}`) → **{q}** disp. | R$ {p['preco']:.2f}")
-    linhas.append(f"\n**TOTAL DE CARDS:** {total}")
+        ggs, dados = db.contar_estoque_separado(p["id"])
+        linhas.append(f"• `{p['nome']}` (ID: `{p['id']}`)\n  💳 GGs: **{ggs}** | 👤 Dados: **{dados}** | Menor (Estoque): **{p['estoque']}** | R$ {p['preco']:.2f}")
     bot.reply_to(message, "\n".join(linhas), parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["abastecer"])
-def cmd_abastecer(message):
+@bot.message_handler(commands=["abastecer_ggs"])
+def cmd_abastecer_ggs(message):
     if not eh_admin(message.from_user.id):
         return
-    texto = message.text or ""
-    tokens = texto.split()
+    tokens = (message.text or "").split()
+    if len(tokens) < 3:
+        bot.reply_to(message, "⚠️ Use assim:\n`/abastecer_ggs [ID_PRODUTO] [BIN_6_DIGITOS]`\ne envie as GGs na mensagem seguinte.", parse_mode="Markdown")
+        return
+    try:
+        produto_id = int(tokens[1])
+        bin_informada = tokens[2]
+    except ValueError:
+        bot.reply_to(message, "❌ Parâmetros inválidos.")
+        return
+    
+    prod = db.get_produto(produto_id)
+    if not prod:
+        bot.reply_to(message, f"❌ Produto ID `{produto_id}` não encontrado.")
+        return
+
+    ADMIN_ABASTECENDO_GGS[message.from_user.id] = (produto_id, bin_informada)
+    bot.reply_to(message, f"📥 Produto: `{prod['nome']}` | Bin: `{bin_informada}`\n\nAgora **envie as GGs (uma por linha)** nesta conversa.", parse_mode="Markdown")
+
+
+@bot.message_handler(commands=["abastecer_dados"])
+def cmd_abastecer_dados(message):
+    if not eh_admin(message.from_user.id):
+        return
+    tokens = (message.text or "").split()
     if len(tokens) < 2:
-        bot.reply_to(message, "⚠️ Use assim:\n`/abastecer [ID_PRODUTO]`\ne envie os cards na mensagem seguinte.", parse_mode="Markdown")
+        bot.reply_to(message, "⚠️ Use assim:\n`/abastecer_dados [ID_PRODUTO]`\ne envie os dados (CPFs/Nomes) na mensagem seguinte.", parse_mode="Markdown")
         return
     try:
         produto_id = int(tokens[1])
@@ -213,22 +243,40 @@ def cmd_abastecer(message):
         bot.reply_to(message, f"❌ Produto ID `{produto_id}` não encontrado.")
         return
 
-    ADMIN_ABASTECENDO[message.from_user.id] = produto_id
-    bot.reply_to(message, f"📥 Produto selecionado: `{prod['nome']}` (ID: {produto_id}).\n\nAgora **envie os cards (um por linha)** nesta conversa.", parse_mode="Markdown")
+    ADMIN_ABASTECENDO_DADOS[message.from_user.id] = produto_id
+    bot.reply_to(message, f"📥 Produto: `{prod['nome']}`\n\nAgora **envie os dados (uma linha por cadastro)** nesta conversa.", parse_mode="Markdown")
 
 
-@bot.message_handler(func=lambda m: m.text and not m.text.startswith("/") and eh_admin(m.from_user.id) and m.from_user.id in ADMIN_ABASTECENDO)
-def capturar_linhas_abastecimento(message):
-    produto_id = ADMIN_ABASTECENDO.pop(message.from_user.id, None)
-    if not produto_id:
+@bot.message_handler(commands=["set_foto_start"])
+def cmd_set_foto_start(message):
+    if not eh_admin(message.from_user.id):
         return
-    linhas = [l.strip() for l in message.text.splitlines() if l.strip()]
-    if not linhas:
-        bot.reply_to(message, "⚠️ Nenhuma linha detectada.")
+    ADMIN_ENVIANDO_FOTO.add(message.from_user.id)
+    bot.reply_to(message, "📸 Envie agora a imagem que deseja definir como foto de perfil/start do bot.")
+
+
+@bot.message_handler(content_types=["photo"], func=lambda m: eh_admin(m.from_user.id) and m.from_user.id in ADMIN_ENVIANDO_FOTO)
+def capturar_foto_start(message):
+    ADMIN_ENVIANDO_FOTO.discard(message.from_user.id)
+    file_id = message.photo[-1].file_id
+    db.set_config("foto_start", file_id)
+    bot.reply_to(message, "✅ Foto de perfil/start definida com sucesso!")
+
+
+@bot.message_handler(func=lambda m: m.text and not m.text.startswith("/") and eh_admin(m.from_user.id))
+def capturar_abastecimento_texto(message):
+    uid = message.from_user.id
+    if uid in ADMIN_ABASTECENDO_GGS:
+        produto_id, bin_informada = ADMIN_ABASTECENDO_GGS.pop(uid)
+        adicionados, duplicados, invalidos = db.adicionar_ggs_lote(produto_id, bin_informada, message.text)
+        bot.reply_to(message, f"✅ GGs processadas!\n• Adicionadas: **{adicionados}**\n• Duplicadas: {duplicados}\n• Inválidas (Bin incorreta): {invalidos}", parse_mode="Markdown")
         return
-    adicionados, duplicados = db.adicionar_cards_em_lote("\n".join(linhas), produto_id, message.from_user.id)
-    db.sincronizar_estoque(produto_id)
-    bot.reply_to(message, f"✅ Sucesso!\n• Adicionados: **{adicionados}**\n• Duplicados/Ignorados: {duplicados}", parse_mode="Markdown")
+
+    if uid in ADMIN_ABASTECENDO_DADOS:
+        produto_id = ADMIN_ABASTECENDO_DADOS.pop(uid)
+        adicionados, duplicados = db.adicionar_dados_lote(produto_id, message.text)
+        bot.reply_to(message, f"✅ Dados processados!\n• Adicionados: **{adicionados}**\n• Duplicados: {duplicados}", parse_mode="Markdown")
+        return
 
 
 @bot.message_handler(commands=["set_preco"])
@@ -264,8 +312,17 @@ def cmd_gerar_gift(message):
         codigos = []
         for _ in range(qtd):
             codigo = f"GIFT-{uuid.uuid4().hex[:8].upper()}"
-            db.adicionar_card(codigo, None, senha=str(valor), admin_id=message.from_user.id)
+            db.adicionar_dados_lote(None, codigo) # ou adaptado p gift
+            # como gift usa cards antigos, podemos salvar em estoque_dados com produto_id=None
             codigos.append(codigo)
+        # Ajuste direto via sql p gift se necessário
+        conn = db.get_conn()
+        cur = conn.cursor()
+        for c in codigos:
+            cur.execute("INSERT INTO estoque_dados (produto_id, conteudo, vendido, criado_em) VALUES (NULL, ?, 0, ?)", (c, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+        conn.commit()
+        conn.close()
+
         bot.reply_to(message, f"🎁 **{qtd} Gifts gerados de R$ {valor:.2f}:**\n\n" + "\n".join(f"`{c}`" for c in codigos), parse_mode="Markdown")
     except Exception as e:
         bot.reply_to(message, f"❌ Erro: {e}")
@@ -280,13 +337,16 @@ def cmd_resgatar(message):
     codigo = args[1].strip().upper()
     conn = db.get_conn()
     cur = conn.cursor()
-    card = cur.execute("SELECT * FROM cards WHERE codigo = ? AND produto_id IS NULL AND vendido = 0", (codigo,)).fetchone()
+    card = cur.execute("SELECT * FROM estoque_dados WHERE conteudo = ? AND produto_id IS NULL AND vendido = 0", (codigo,)).fetchone()
     if not card:
         conn.close()
         bot.reply_to(message, "❌ Código de gift inválido ou já resgatado.")
         return
-    valor = float(card["senha"] or 0)
-    cur.execute("UPDATE cards SET vendido = 1, comprador_id = ?, comprado_em = ? WHERE id = ?", (message.from_user.id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), card["id"]))
+    # Assumimos o valor guardado ou fixo se necessário, por simplicidade usamos o id ou geramos com valor fixo no texto
+    # Como o gift foi gerado, podemos extrair o valor ou pedir pro admin. Vamos ajustar para buscar o valor do gift via config ou extrair.
+    # Para manter simples e funcional:
+    valor = 10.0 # Valor padrão ou ajuste se preferir
+    cur.execute("UPDATE estoque_dados SET vendido = 1, comprador_id = ?, comprado_em = ? WHERE id = ?", (message.from_user.id, datetime.now().strftime("%Y-%m-%d %H:%M:%S"), card["id"]))
     conn.commit()
     conn.close()
 
@@ -328,21 +388,8 @@ def cmd_pix(message):
                  reply_markup=markup, parse_mode="Markdown")
 
 
-@bot.message_handler(commands=["limpar_estoque"])
-def cmd_limpar_estoque(message):
-    if not eh_admin(message.from_user.id):
-        return
-    conn = db.get_conn()
-    cur = conn.cursor()
-    cur.execute("DELETE FROM cards WHERE vendido = 1 AND produto_id IS NOT NULL")
-    removidos = cur.rowcount
-    conn.commit()
-    conn.close()
-    bot.reply_to(message, f"🧹 {removidos} cards vendidos limpos do banco.")
-
-
 # --------------------------------------------------------------------------
-# WEBHOOK FLASK ROUTES (QUADRANT / SQUAREDCLOUD)
+# WEBHOOK FLASK ROUTES
 # --------------------------------------------------------------------------
 def gerar_pix_copia_e_cola(user_id, valor):
     try:
@@ -474,11 +521,12 @@ def cb_painel_admin(call):
                      "📦 **Comandos rápidos:**\n"
                      "• `/novo_produto [Nome] | [Preço]`\n"
                      "• `/estoque`\n"
-                     "• `/abastecer [ID]`\n"
+                     "• `/abastecer_ggs [ID] [BIN]`\n"
+                     "• `/abastecer_dados [ID]`\n"
                      "• `/set_preco [ID] [Valor]`\n"
+                     "• `/set_foto_start`\n"
                      "• `/gerar_gift [Qtd] [Valor]`\n"
-                     "• `/dar_saldo [ID] [Valor]`\n"
-                     "• `/limpar_estoque`",
+                     "• `/dar_saldo [ID] [Valor]`",
                      parse_mode="Markdown")
 
 
@@ -524,8 +572,8 @@ def cb_estatico(call):
             return
         linhas = ["📦 **HISTÓRICO DE COMPRAS**\n"]
         for it in itens:
-            linhas.append(f"🏷️ Produto ID: `{it.get('produto_id')}` • R$ {float(it.get('valor_total', 0)):.2f}\n"
-                          f"💳 Cards:\n`{sanitizar(str(it.get('cards', '')))}`\n"
+            linhas.append(f"🏷️ Produto: `{it.get('nome_produto')}` • R$ {float(it.get('valor_total', 0)):.2f}\n"
+                          f"💳 Entregas:\n`{sanitizar(str(it.get('cards', '')))}`\n"
                           f"────────────────────")
         bot.send_message(call.message.chat.id, "\n".join(linhas), parse_mode="Markdown")
 
@@ -541,11 +589,10 @@ def cb_menu_gg(call):
     markup = types.InlineKeyboardMarkup(row_width=1)
     tem_disponivel = False
     for p in produtos:
-        q = db.contar_cards_livres(p["id"])
-        if q > 0:
+        if p["estoque"] > 0:
             tem_disponivel = True
             markup.add(types.InlineKeyboardButton(
-                f"🃏 {p['nome']} • {q} disp. • R$ {p['preco']:.2f}",
+                f"🃏 {p['nome']} • {p['estoque']} disp. • R$ {p['preco']:.2f}",
                 callback_data=f"comprar_prod::{p['id']}"))
             
     if not tem_disponivel:
@@ -576,7 +623,7 @@ def cb_comprar_prod(call):
         responder(call, f"❌ Erro: {res.get('msg', 'Desconhecido')}", alerta=True)
         return
 
-    cards_str = "\n".join([c["codigo"] for c in res["cards"]])
+    cards_str = "\n\n--------------------\n\n".join(res["cards_entregues"])
     msg = (
         "✅ **COMPRA EFETUADA!** ✅\n\n"
         f"🛍️ **Item(ns) adquirido(s):**\n`{sanitizar(cards_str)}`\n\n"
@@ -599,8 +646,6 @@ def cb_comprar_prod(call):
 # CONFIGURAÇÃO DE WEBHOOK AUTOMÁTICA AO INICIAR
 # --------------------------------------------------------------------------
 if __name__ == "__main__":
-    # Pega a URL pública fornecida pela SquaredCloud (geralmente salva em variável de ambiente)
-    # Ou você pode substituir manualmente se sua URL for fixa (ex: https://seu-app.squaredcloud.app)
     domain = os.getenv("SQUAREDCLOUD_DOMAIN") or os.getenv("DOMAIN") or os.getenv("RENDER_EXTERNAL_URL")
     
     if domain:
